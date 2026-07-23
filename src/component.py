@@ -179,7 +179,7 @@ class Component(ComponentBase):
         obj = cfg.object
         assert obj is not None
         endpoint = _REGISTRY[obj]
-        since = self._since(cfg, previous_state, endpoint.incremental_field)
+        since = self._since(cfg.incremental, previous_state, endpoint.incremental_field)
 
         writer = _TableWriter(obj.value)
         try:
@@ -192,11 +192,10 @@ class Component(ComponentBase):
         finally:
             writer.close()
 
-    def _since(
-        self, cfg: Configuration, previous_state: dict[str, Any], incremental_field: str | None
-    ) -> datetime | None:
+    @staticmethod
+    def _since(incremental: bool, previous_state: dict[str, Any], incremental_field: str | None) -> datetime | None:
         """The lower-bound timestamp for an incremental entity pull, or None for full load."""
-        if not cfg.incremental or incremental_field is None:
+        if not incremental or incremental_field is None:
             return None
         last = previous_state.get(_STATE_LAST_RUN)
         if not last:
@@ -280,7 +279,16 @@ class Component(ComponentBase):
 
     @staticmethod
     def _flatten_record(record: dict[str, Any]) -> dict[str, Any]:
-        """Flatten one record; nested objects/lists become JSON strings."""
+        """Flatten one record; nested objects and lists become JSON-string columns.
+
+        Deliberate decision: nested structures are serialized to a single JSON column
+        rather than exploded into dotted scalar columns. Reddit Ads nested shapes
+        (targeting specs, creative details, …) are variable and not yet contract-verified
+        (spec §9), so dotted flattening would yield an unstable, sparse schema that
+        changes as records vary. A single JSON column keeps the table schema stable and
+        lets downstream transformations parse what they need. Matches the sibling
+        `new-x-ads` extractor's convention. Revisit per-object once shapes are verified.
+        """
         return {k: (json.dumps(v) if isinstance(v, (list, dict)) else v) for k, v in record.items()}
 
     # -------------------------------------------------------------- output

@@ -210,11 +210,12 @@ class RedditAdsClient:
     def _error_detail(resp: requests.Response) -> str:
         try:
             body = resp.json()
-            errors = body.get("errors") or body.get("error")
-            if errors:
-                import json as _json
+            if isinstance(body, dict):
+                errors = body.get("errors") or body.get("error")
+                if errors:
+                    import json as _json
 
-                return _json.dumps(errors)[:500]
+                    return _json.dumps(errors)[:500]
         except ValueError:
             pass
         return resp.text[:500]
