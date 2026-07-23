@@ -21,16 +21,20 @@ def test_credentials_missing_field_raises_userexception():
 
 
 def test_credentials_ignore_extra_keys():
-    # The platform injects extras (e.g. debug) that must not fail validation.
-    creds = Credentials(**_CREDS, debug=True, ad_account_id="a1")
+    creds = Credentials(**_CREDS, debug=True, business_id="b1")
     assert creds.client_id == "cid"
 
 
-def test_configuration_requires_account_and_object():
-    with pytest.raises(UserException):
-        Configuration(**_CREDS, object="campaigns")  # no ad_account_id
+def test_configuration_requires_object():
     with pytest.raises(UserException):
         Configuration(**_CREDS, ad_account_id="a1")  # no object
+
+
+def test_configuration_ids_optional_at_config_level():
+    # business_id / ad_account_id are validated per-object by the component, not here.
+    cfg = Configuration(**_CREDS, object="time_zones")
+    assert cfg.business_id == ""
+    assert cfg.ad_account_id == ""
 
 
 def test_configuration_report_requires_report_block():
@@ -45,21 +49,16 @@ def test_configuration_incremental_flag():
     assert cfg_full.incremental is False
 
 
-def test_reference_objects_forced_full_load():
-    # Reference objects have no cursor → always full load, even if incremental is requested.
-    cfg = Configuration(**_CREDS, ad_account_id="a1", object="ad_accounts", load_type="incremental_load")
-    assert cfg.incremental is False
-
-
-def test_report_config_valid():
+def test_report_config_valid_defaults_breakdowns_to_date():
     cfg = Configuration(
         **_CREDS,
         ad_account_id="a1",
         object="report",
-        report={"level": "CAMPAIGN", "metrics": ["impressions", "clicks"], "breakdowns": ["date"]},
+        report={"metrics": ["impressions", "clicks"]},
     )
     assert cfg.report is not None
     assert cfg.report.metrics == ["impressions", "clicks"]
+    assert cfg.report.breakdowns == ["DATE"]
 
 
 def test_report_config_rejects_more_than_three_breakdowns():
@@ -74,7 +73,7 @@ def test_report_config_rejects_more_than_three_breakdowns():
 
 def test_report_config_requires_metrics():
     with pytest.raises(UserException):
-        Configuration(**_CREDS, ad_account_id="a1", object="report", report={"metrics": [], "breakdowns": []})
+        Configuration(**_CREDS, ad_account_id="a1", object="report", report={"metrics": []})
 
 
 def test_report_config_custom_range_requires_dates():
@@ -89,5 +88,6 @@ def test_report_config_custom_range_requires_dates():
 
 def test_enums_cover_expected_values():
     assert ObjectType.report == "report"
+    assert ObjectType.targeting_interests == "targeting_interests"
     assert LoadType.incremental_load == "incremental_load"
-    assert ReportConfig(metrics=["impressions"]).level == "CAMPAIGN"
+    assert ReportConfig(metrics=["impressions"]).breakdowns == ["DATE"]

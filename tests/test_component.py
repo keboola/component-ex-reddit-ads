@@ -1,9 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 
+import pytest
 from freezegun import freeze_time
+from keboola.component.exceptions import UserException
 
-from component import _EMPTY_PK_PLACEHOLDER, Component
-from configuration import Configuration, ReportConfig
+from component import _EMPTY_PK_PLACEHOLDER, _REGISTRY, Component
+from configuration import Configuration, ObjectType, ReportConfig
 
 _CREDS = {"#client_id": "cid", "#client_secret": "csec", "#refresh_token": "rt"}
 
@@ -29,16 +31,49 @@ def test_flatten_record_jsonifies_nested():
 
 
 def test_is_modified_since():
-    since = __import__("datetime").datetime.fromisoformat("2026-07-01T00:00:00+00:00")
-    newer = {"modified_at": "2026-07-05T00:00:00Z"}
-    older = {"modified_at": "2026-06-01T00:00:00Z"}
-    assert Component._is_modified_since(newer, "modified_at", since) is True
-    assert Component._is_modified_since(older, "modified_at", since) is False
+    since = datetime.fromisoformat("2026-07-01T00:00:00+00:00")
+    assert Component._is_modified_since({"modified_at": "2026-07-05T00:00:00Z"}, "modified_at", since) is True
+    assert Component._is_modified_since({"modified_at": "2026-06-01T00:00:00Z"}, "modified_at", since) is False
     # missing / unparseable cursor value → keep the record (never silently drop)
     assert Component._is_modified_since({}, "modified_at", since) is True
     assert Component._is_modified_since({"modified_at": "not-a-date"}, "modified_at", since) is True
     # no incremental field configured → always keep
-    assert Component._is_modified_since(older, None, since) is True
+    assert Component._is_modified_since({"modified_at": "2026-06-01T00:00:00Z"}, None, since) is True
+
+
+# --------------------------------------------------------------- scoping
+
+
+def test_resolve_path_user_scope():
+    cfg = Configuration(**_CREDS, object="businesses")
+    assert Component._resolve_path(cfg, _REGISTRY[ObjectType.businesses]) == "me/businesses"
+
+
+def test_resolve_path_toplevel_scope():
+    cfg = Configuration(**_CREDS, object="time_zones")
+    assert Component._resolve_path(cfg, _REGISTRY[ObjectType.time_zones]) == "time_zones"
+
+
+def test_resolve_path_business_scope_requires_business_id():
+    ep = _REGISTRY[ObjectType.ad_accounts]
+    ok = Configuration(**_CREDS, object="ad_accounts", business_id="b1")
+    assert Component._resolve_path(ok, ep) == "businesses/b1/ad_accounts"
+    with pytest.raises(UserException):
+        Component._resolve_path(Configuration(**_CREDS, object="ad_accounts"), ep)
+
+
+def test_resolve_path_account_scope_requires_ad_account_id():
+    ep = _REGISTRY[ObjectType.campaigns]
+    ok = Configuration(**_CREDS, object="campaigns", ad_account_id="a2_x")
+    assert Component._resolve_path(ok, ep) == "ad_accounts/a2_x/campaigns"
+    with pytest.raises(UserException):
+        Component._resolve_path(Configuration(**_CREDS, object="campaigns"), ep)
+
+
+def test_registry_covers_every_non_report_object():
+    for obj in ObjectType:
+        if obj != ObjectType.report:
+            assert obj in _REGISTRY, f"{obj} missing from registry"
 
 
 # --------------------------------------------------------------- output
@@ -53,7 +88,6 @@ def test_serialize_cell():
     assert Component._serialize_cell(None, False) == ""
     assert Component._serialize_cell(True, False) == "true"
     assert Component._serialize_cell(False, False) == "false"
-    # empty PK cell gets the placeholder so the typed NOT NULL PK column loads
     assert Component._serialize_cell("", True) == _EMPTY_PK_PLACEHOLDER
     assert Component._serialize_cell("keep", True) == "keep"
 
@@ -61,26 +95,26 @@ def test_serialize_cell():
 # --------------------------------------------------------------- reports
 
 
-def test_report_primary_key_uses_date_level_and_breakdowns():
-    rc = ReportConfig(level="CAMPAIGN", metrics=["impressions"], breakdowns=["placement"])
-    columns = {"date": None, "campaign_id": None, "placement": None, "impressions": None}
-    pk = Component._report_primary_key(rc, columns)
-    assert pk == ["date", "campaign_id", "placement"]
+def test_report_primary_key_from_breakdowns_present_in_columns():
+    rc = ReportConfig(metrics=["impressions"], breakdowns=["DATE", "CAMPAIGN_ID"])
+    columns = {"date": None, "campaign_id": None, "impressions": None}
+    assert Component._report_primary_key(rc, columns) == ["date", "campaign_id"]
 
 
-def test_report_primary_key_falls_back_to_date():
-    rc = ReportConfig(level="AD", metrics=["impressions"], breakdowns=[])
-    assert Component._report_primary_key(rc, {"impressions": None}) == ["date"]
+def test_report_primary_key_empty_when_breakdowns_absent():
+    rc = ReportConfig(metrics=["impressions"], breakdowns=["DATE"])
+    assert Component._report_primary_key(rc, {"impressions": None}) == []
 
 
 def test_report_body_shape():
-    rc = ReportConfig(level="CAMPAIGN", metrics=["impressions", "clicks"], breakdowns=["date"], time_zone="UTC")
+    rc = ReportConfig(metrics=["impressions", "clicks"], breakdowns=["DATE"])
     body = Component._report_body(rc, date(2026, 7, 1), date(2026, 7, 8))
-    assert body["level"] == "CAMPAIGN"
-    assert body["metrics"] == ["impressions", "clicks"]
-    assert body["breakdowns"] == ["date"]
-    assert body["starts_at"] == "2026-07-01"
-    assert body["ends_at"] == "2026-07-08"
+    assert body == {
+        "fields": ["impressions", "clicks"],
+        "breakdowns": ["DATE"],
+        "starts_at": "2026-07-01T00:00:00Z",
+        "ends_at": "2026-07-08T00:00:00Z",
+    }
 
 
 @freeze_time("2026-07-22")
@@ -108,8 +142,7 @@ def test_report_window_incremental_applies_lookback():
     )
     state = {"last_run": "2026-07-20T00:00:00+00:00"}
     start, end = _bare_component()._report_window(cfg, cfg.report, state)
-    # last_run (2026-07-20) minus 3-day lookback
-    assert start == date(2026, 7, 17)
+    assert start == date(2026, 7, 17)  # last_run - 3-day lookback
     assert end == date(2026, 7, 22)
 
 

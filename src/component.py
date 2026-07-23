@@ -1,11 +1,13 @@
 """Reddit Ads extractor — main component class.
 
-Pulls the Reddit Ads read surface (accounts, the campaign→ad-group→ad→post
-hierarchy, audiences, reference data and performance reports) into Keboola
-Storage. ``run()`` is a thin orchestrator; all HTTP access lives in :mod:`client`.
+Pulls the Reddit Ads read surface into Keboola Storage. ``run()`` is a thin
+orchestrator; all HTTP access lives in :mod:`client`.
 
-One object is extracted per config row; the object → endpoint/PK/cursor mapping
-lives in ``_REGISTRY``.
+The Reddit Ads hierarchy is user → business → ad account, so objects have a
+**scope**: user-scoped (``me/businesses``), business-scoped
+(``businesses/{business_id}/…``), account-scoped (``ad_accounts/{ad_account_id}/…``)
+or top-level reference (``time_zones``, ``targeting/…``). One object is extracted
+per config row; the object → path/scope/PK/cursor mapping lives in ``_REGISTRY``.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ import tempfile
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
+from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
@@ -33,10 +36,10 @@ from configuration import Configuration, Credentials, DateRangeMode, ObjectType,
 # VCR sanitizers, picked up by the datadirtest VCR scaffolder during recording.
 # 1) DefaultSanitizer strips the Authorization header + the OAuth token fields.
 # 2) BodyFieldSanitizer redacts account names/spend from recorded bodies.
-#    NEVER redact id fields (`id`, `campaign_id`, …) or `date`/`modified_at` —
+#    NEVER redact id fields (`id`, `business_id`, …) or `date`/`modified_at` —
 #    primary keys and the incremental window depend on them.
-_REDACTED_TEXT_FIELDS = ["name", "business_name", "email", "advertiser_name"]
-_REDACTED_NUMERIC_FIELDS = ["spend", "spend_micros", "budget", "daily_budget", "lifetime_budget"]
+_REDACTED_TEXT_FIELDS = ["name", "email", "phone", "website_url", "firstname", "lastname", "reddit_username"]
+_REDACTED_NUMERIC_FIELDS = ["spend", "spend_micros", "credit_limit", "billable_amount"]
 VCR_SANITIZERS = [
     DefaultSanitizer(additional_sensitive_fields=["access_token", "refresh_token", "client_id", "client_secret"]),
     BodyFieldSanitizer(fields=_REDACTED_TEXT_FIELDS, replacement="REDACTED"),
@@ -55,46 +58,50 @@ _EMPTY_PK_PLACEHOLDER = "__empty__"
 _TIMESTAMP_COLUMNS = frozenset({"created_at", "modified_at", "start_time", "end_time"})
 
 
+class Scope(Enum):
+    USER = auto()  # me/<path> (e.g. me/businesses)
+    BUSINESS = auto()  # businesses/{business_id}/<path>
+    ACCOUNT = auto()  # ad_accounts/{ad_account_id}/<path>
+    TOPLEVEL = auto()  # <path> as-is (reference data)
+
+
 @dataclass(frozen=True)
 class _Endpoint:
-    """How to fetch and store one object.
-
-    ``path`` is relative to ``ad_accounts/{account_id}/`` when ``account_scoped``,
-    otherwise it is a top-level path. ``incremental_field`` is the response field
-    used as the client-side ``modified_at`` cursor (None → the object is always
-    full-loaded).
-
-    NOTE: exact endpoint paths / PKs for a few objects are provisional (spec §9)
-    and localized here so a live-verified correction is a one-line change.
-    """
+    """How to fetch and store one object. ``incremental_field`` = the response
+    field used as the client-side cursor (None → always full-loaded)."""
 
     path: str
+    scope: Scope
     primary_key: list[str] = field(default_factory=lambda: ["id"])
-    account_scoped: bool = True
     incremental_field: str | None = "modified_at"
 
 
-# object → endpoint mapping. Reference objects carry incremental_field=None.
+# object → endpoint mapping. All paths verified live against the Reddit Ads API v3.
 _REGISTRY: dict[ObjectType, _Endpoint] = {
-    ObjectType.ad_accounts: _Endpoint("ad_accounts", account_scoped=False, incremental_field=None),
-    ObjectType.businesses: _Endpoint("businesses", account_scoped=False, incremental_field=None),
-    ObjectType.members: _Endpoint("members", incremental_field=None),
-    ObjectType.ad_account_history: _Endpoint("history", primary_key=["id"]),
-    ObjectType.campaigns: _Endpoint("campaigns"),
-    ObjectType.ad_groups: _Endpoint("ad_groups"),
-    ObjectType.ads: _Endpoint("ads"),
-    ObjectType.posts: _Endpoint("posts"),
-    ObjectType.custom_audiences: _Endpoint("custom_audiences"),
-    ObjectType.saved_audiences: _Endpoint("saved_audiences"),
-    ObjectType.targeting: _Endpoint("targeting", incremental_field=None),
-    ObjectType.pixels: _Endpoint("pixels"),
-    ObjectType.lead_gen_forms: _Endpoint("lead_gen_forms"),
-    ObjectType.product_catalogs: _Endpoint("product_catalogs"),
-    ObjectType.funding_instruments: _Endpoint("funding_instruments", incremental_field=None),
-    ObjectType.app: _Endpoint("apps"),
-    ObjectType.skadnetwork: _Endpoint("skadnetwork"),
-    ObjectType.profiles: _Endpoint("profiles"),
-    ObjectType.time_zones: _Endpoint("time_zones", account_scoped=False, incremental_field=None),
+    ObjectType.businesses: _Endpoint("me/businesses", Scope.USER),
+    ObjectType.ad_accounts: _Endpoint("ad_accounts", Scope.BUSINESS),
+    ObjectType.product_catalogs: _Endpoint("product_catalogs", Scope.BUSINESS),
+    ObjectType.campaigns: _Endpoint("campaigns", Scope.ACCOUNT),
+    ObjectType.ad_groups: _Endpoint("ad_groups", Scope.ACCOUNT),
+    ObjectType.ads: _Endpoint("ads", Scope.ACCOUNT),
+    ObjectType.custom_audiences: _Endpoint("custom_audiences", Scope.ACCOUNT),
+    ObjectType.saved_audiences: _Endpoint("saved_audiences", Scope.ACCOUNT),
+    ObjectType.funding_instruments: _Endpoint("funding_instruments", Scope.ACCOUNT, incremental_field=None),
+    ObjectType.pixels: _Endpoint("pixels", Scope.ACCOUNT, incremental_field=None),
+    ObjectType.lead_gen_forms: _Endpoint("lead_gen_forms", Scope.ACCOUNT),
+    ObjectType.profiles: _Endpoint("profiles", Scope.ACCOUNT, incremental_field=None),
+    ObjectType.apps: _Endpoint("apps", Scope.ACCOUNT, incremental_field=None),
+    ObjectType.targeting_interests: _Endpoint("targeting/interests", Scope.TOPLEVEL, incremental_field=None),
+    ObjectType.targeting_communities: _Endpoint("targeting/communities", Scope.TOPLEVEL, incremental_field=None),
+    ObjectType.targeting_geolocations: _Endpoint("targeting/geolocations", Scope.TOPLEVEL, incremental_field=None),
+    ObjectType.targeting_carriers: _Endpoint("targeting/carriers", Scope.TOPLEVEL, incremental_field=None),
+    ObjectType.targeting_devices: _Endpoint(
+        "targeting/devices", Scope.TOPLEVEL, primary_key=["make", "model"], incremental_field=None
+    ),
+    ObjectType.targeting_languages: _Endpoint(
+        "targeting/languages", Scope.TOPLEVEL, primary_key=["code"], incremental_field=None
+    ),
+    ObjectType.time_zones: _Endpoint("time_zones", Scope.TOPLEVEL, incremental_field=None),
 }
 
 
@@ -143,9 +150,8 @@ class Component(ComponentBase):
     def __init__(self) -> None:
         super().__init__()
         # Parse only the credentials here and build the client once, shared by
-        # run() and the sync actions. Validating just the credentials keeps Test
-        # Connection / Load Ad Accounts from tripping over an unrelated report
-        # validation error. run() parses the full Configuration.
+        # run() and the sync actions. Validating just the credentials keeps the
+        # sync actions from tripping over an unrelated report validation error.
         creds = Credentials(**self.configuration.parameters)
         self._client = RedditAdsClient(
             creds.client_id,
@@ -179,18 +185,32 @@ class Component(ComponentBase):
         obj = cfg.object
         assert obj is not None
         endpoint = _REGISTRY[obj]
+        path = self._resolve_path(cfg, endpoint)
         since = self._since(cfg.incremental, previous_state, endpoint.incremental_field)
 
         writer = _TableWriter(obj.value)
         try:
-            path = f"ad_accounts/{cfg.ad_account_id}/{endpoint.path}" if endpoint.account_scoped else endpoint.path
             for record in self._client.get_paginated(path):
                 if since and not self._is_modified_since(record, endpoint.incremental_field, since):
                     continue
                 writer.write(self._flatten_record(record))
-            self._finalize_table(writer, primary_key=endpoint.primary_key, incremental=cfg.incremental)
+            incremental = cfg.incremental and endpoint.incremental_field is not None
+            self._finalize_table(writer, primary_key=endpoint.primary_key, incremental=incremental)
         finally:
             writer.close()
+
+    @staticmethod
+    def _resolve_path(cfg: Configuration, endpoint: _Endpoint) -> str:
+        """Build the request path for an object, enforcing the required id per scope."""
+        if endpoint.scope == Scope.BUSINESS:
+            if not cfg.business_id:
+                raise UserException(f"A business must be selected to extract '{cfg.object}'.")
+            return f"businesses/{cfg.business_id}/{endpoint.path}"
+        if endpoint.scope == Scope.ACCOUNT:
+            if not cfg.ad_account_id:
+                raise UserException(f"An ad account must be selected to extract '{cfg.object}'.")
+            return f"ad_accounts/{cfg.ad_account_id}/{endpoint.path}"
+        return endpoint.path  # USER / TOPLEVEL paths are absolute
 
     @staticmethod
     def _since(incremental: bool, previous_state: dict[str, Any], incremental_field: str | None) -> datetime | None:
@@ -223,17 +243,18 @@ class Component(ComponentBase):
     def _extract_report(self, cfg: Configuration, previous_state: dict[str, Any]) -> None:
         rc = cfg.report
         assert rc is not None  # guaranteed by Configuration validation
+        if not cfg.ad_account_id:
+            raise UserException("An ad account must be selected to extract a report.")
         start, end = self._report_window(cfg, rc, previous_state)
-        body = self._report_body(rc, start, end)
+        report_data = self._report_body(rc, start, end)
 
-        writer = _TableWriter(f"report_{rc.level.value.lower()}")
+        writer = _TableWriter("report")
         try:
-            for row in self._client.get_report(cfg.ad_account_id, body):
+            for row in self._client.get_report(cfg.ad_account_id, report_data):
                 writer.write(self._flatten_record(row))
-            # PK is provisional (spec §9): a report row is uniquely keyed by its
-            # date, the entity id at the report level, and any breakdown columns.
             pk = self._report_primary_key(rc, writer.columns)
-            self._finalize_table(writer, primary_key=pk, incremental=cfg.incremental, typed=False)
+            # Without a resolvable PK we overwrite (full) rather than append unbounded.
+            self._finalize_table(writer, primary_key=pk, incremental=cfg.incremental and bool(pk), typed=False)
         finally:
             writer.close()
 
@@ -258,22 +279,21 @@ class Component(ComponentBase):
 
     @staticmethod
     def _report_body(rc: ReportConfig, start: date, end: date) -> dict[str, Any]:
-        # Payload param names are provisional (spec §9) — isolated here for an easy fix.
+        # Verified live shape: metrics are `fields`, dates are date-times, `breakdowns`
+        # are the grouping dimensions. The caller wraps this in {"data": ...}.
         return {
-            "level": rc.level.value,
-            "metrics": rc.metrics,
+            "fields": rc.metrics,
             "breakdowns": rc.breakdowns,
-            "time_zone_id": rc.time_zone,
-            "time_granularity": rc.granularity.value,
-            "starts_at": start.isoformat(),
-            "ends_at": end.isoformat(),
+            "starts_at": f"{start.isoformat()}T00:00:00Z",
+            "ends_at": f"{end.isoformat()}T00:00:00Z",
         }
 
     @staticmethod
     def _report_primary_key(rc: ReportConfig, columns: dict[str, None]) -> list[str]:
-        pk: list[str] = [c for c in ("date", f"{rc.level.value.lower()}_id", "id") if c in columns]
-        pk += [b for b in rc.breakdowns if b in columns and b not in pk]
-        return pk or ["date"]
+        # A report row is keyed by its breakdown columns (e.g. DATE → `date`,
+        # CAMPAIGN_ID → `campaign_id`). Use only breakdowns that actually appear as
+        # columns; if none do, return [] so the table is overwritten, not appended.
+        return [b.lower() for b in rc.breakdowns if b.lower() in columns]
 
     # ---------------------------------------------------------- flattening
 
@@ -283,11 +303,9 @@ class Component(ComponentBase):
 
         Deliberate decision: nested structures are serialized to a single JSON column
         rather than exploded into dotted scalar columns. Reddit Ads nested shapes
-        (targeting specs, creative details, …) are variable and not yet contract-verified
-        (spec §9), so dotted flattening would yield an unstable, sparse schema that
-        changes as records vary. A single JSON column keeps the table schema stable and
-        lets downstream transformations parse what they need. Matches the sibling
-        `new-x-ads` extractor's convention. Revisit per-object once shapes are verified.
+        vary across objects, so dotted flattening would yield an unstable, sparse
+        schema. A single JSON column keeps the table schema stable and lets downstream
+        transformations parse what they need. Matches the sibling `new-x-ads` extractor.
         """
         return {k: (json.dumps(v) if isinstance(v, (list, dict)) else v) for k, v in record.items()}
 
@@ -357,42 +375,41 @@ class Component(ComponentBase):
     @sync_action("testConnection")
     def test_connection(self) -> ValidationResult:
         try:
-            self._client.list_ad_accounts()
+            self._client.get_me()
         except UserException:
             raise
         except Exception as exc:
             raise UserException(f"Connection test failed: {exc}") from exc
         return ValidationResult("Connection successful.", MessageType.SUCCESS)
 
+    @sync_action("listBusinesses")
+    def list_businesses_action(self) -> list[SelectElement]:
+        try:
+            businesses = list(self._client.get_paginated("me/businesses"))
+        except UserException:
+            raise
+        except Exception as exc:
+            raise UserException(f"Could not load businesses: {exc}") from exc
+        return [
+            SelectElement(value=b["id"], label=f"{b.get('name', b['id'])} ({b['id']})")
+            for b in businesses
+            if b.get("id")
+        ]
+
     @sync_action("listAdAccounts")
     def list_ad_accounts_action(self) -> list[SelectElement]:
+        business_id = self.configuration.parameters.get("business_id")
+        if not business_id:
+            raise UserException("Select a business first, then load its ad accounts.")
         try:
-            accounts = self._client.list_ad_accounts()
+            accounts = list(self._client.get_paginated(f"businesses/{business_id}/ad_accounts"))
         except UserException:
             raise
         except Exception as exc:
             raise UserException(f"Could not load ad accounts: {exc}") from exc
         return [
-            SelectElement(value=acc["id"], label=f"{acc.get('name', acc['id'])} ({acc['id']})")
-            for acc in accounts
-            if acc.get("id")
+            SelectElement(value=a["id"], label=f"{a.get('name', a['id'])} ({a['id']})") for a in accounts if a.get("id")
         ]
-
-    @sync_action("listTimeZones")
-    def list_time_zones_action(self) -> list[SelectElement]:
-        try:
-            zones = self._client.list_time_zones()
-        except UserException:
-            raise
-        except Exception as exc:
-            raise UserException(f"Could not load time zones: {exc}") from exc
-        options: list[SelectElement] = []
-        for z in zones:
-            value = z.get("id") or z.get("name")
-            if not value:
-                continue
-            options.append(SelectElement(value=value, label=z.get("name") or value))
-        return options
 
 
 if __name__ == "__main__":

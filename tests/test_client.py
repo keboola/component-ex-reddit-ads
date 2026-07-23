@@ -103,18 +103,27 @@ def test_get_paginated_single_page():
 # --------------------------------------------------------------- reports
 
 
-def test_get_report_posts_then_follows_next_url():
+def test_get_report_wraps_data_reads_metrics_and_follows_next_url():
     client = _client()
     next_url = f"{BASE_URL}/ad_accounts/1/reports?page=2"
     pages = [
-        FakeResponse(json_body={"data": [{"date": "2026-07-01"}], "pagination": {"next_url": next_url}}),
-        FakeResponse(json_body={"data": [{"date": "2026-07-02"}]}),
+        # rows live under data.metrics (not a top-level list); POST creates the report
+        FakeResponse(json_body={"data": {"metrics": [{"date": "2026-07-01"}]}, "pagination": {"next_url": next_url}}),
+        FakeResponse(json_body={"data": {"metrics": [{"date": "2026-07-02"}]}}),
     ]
     with mock.patch.object(client._session, "request", side_effect=pages) as req:
-        rows = list(client.get_report("1", {"level": "CAMPAIGN"}))
+        rows = list(client.get_report("1", {"fields": ["impressions"], "breakdowns": ["DATE"]}))
     assert [r["date"] for r in rows] == ["2026-07-01", "2026-07-02"]
-    assert req.call_args_list[0].args[0] == "POST"  # first call creates the report
+    # first call is POST with the payload wrapped in {"data": ...}
+    assert req.call_args_list[0].args[0] == "POST"
+    assert req.call_args_list[0].kwargs["json"] == {"data": {"fields": ["impressions"], "breakdowns": ["DATE"]}}
     assert req.call_args_list[1].args[0] == "GET"  # subsequent pages are GET
+
+
+def test_get_me_returns_data():
+    client = _client()
+    with mock.patch.object(client._session, "request", return_value=FakeResponse(json_body={"data": {"id": "t2_x"}})):
+        assert client.get_me() == {"id": "t2_x"}
 
 
 # ------------------------------------------------------------ retry/errors

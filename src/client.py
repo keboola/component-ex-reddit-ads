@@ -239,37 +239,27 @@ class RedditAdsClient:
             # next_url carries its own query string; don't re-append the initial params.
             request_params = {}
 
-    # --------------------------------------------------------------- entities
-
-    def list_objects(self, account_id: str, object_path: str) -> Iterator[dict[str, Any]]:
-        """List an account-scoped entity collection (campaigns, ad_groups, …)."""
-        return self.get_paginated(f"ad_accounts/{account_id}/{object_path}")
-
-    def list_ad_accounts(self) -> list[dict[str, Any]]:
-        """List the ad accounts the authorized user can access (used by sync actions)."""
-        return list(self.get_paginated("ad_accounts"))
-
-    def list_time_zones(self) -> list[dict[str, Any]]:
-        """Reference lookup of supported report time zones (also backs a dropdown)."""
-        return list(self.get_paginated("time_zones"))
+    def get_me(self) -> dict[str, Any]:
+        """The authenticated user (used by Test Connection)."""
+        return self._request("GET", f"{BASE_URL}/me").json().get("data") or {}
 
     # ------------------------------------------------------------- reporting
 
-    def get_report(self, account_id: str, body: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    def get_report(self, account_id: str, report_data: dict[str, Any]) -> Iterator[dict[str, Any]]:
         """Run the reports endpoint and yield report rows across all pages.
 
-        ``body`` is the request payload (level, metrics, breakdowns, date range,
-        time zone, granularity). The exact param names are isolated to the caller
-        (``component.py``) so they are easy to correct once verified against a
-        live call / the official Postman collection.
+        The report is created with a POST whose params are wrapped in a ``data``
+        object (verified live): ``{"data": {"fields": [...], "starts_at": ...,
+        "ends_at": ..., "breakdowns": [...]}}``. The response carries the rows under
+        ``data.metrics`` (not a top-level list) plus a ``pagination`` object whose
+        ``next_url`` is followed verbatim via GET for further pages.
         """
         url: str | None = f"{BASE_URL}/ad_accounts/{account_id}/reports"
         first = True
         while url:
-            # The report is created by a POST; subsequent pages follow next_url via GET.
-            method = "POST" if first else "GET"
-            resp = self._request(method, url, json=body if first else None)
+            resp = self._request("POST", url, json={"data": report_data}) if first else self._request("GET", url)
             payload = resp.json()
-            yield from payload.get("data") or []
+            data = payload.get("data") or {}
+            yield from (data.get("metrics") if isinstance(data, dict) else data) or []
             url = ((payload.get("pagination") or {}).get("next_url")) or None
             first = False

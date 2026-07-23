@@ -6,50 +6,52 @@
       "type": "string",
       "title": "Object to extract",
       "enum": [
-        "ad_accounts",
         "businesses",
-        "members",
-        "ad_account_history",
+        "ad_accounts",
+        "product_catalogs",
         "campaigns",
         "ad_groups",
         "ads",
-        "posts",
-        "report",
         "custom_audiences",
         "saved_audiences",
-        "targeting",
+        "funding_instruments",
         "pixels",
         "lead_gen_forms",
-        "product_catalogs",
-        "funding_instruments",
-        "app",
-        "skadnetwork",
         "profiles",
+        "apps",
+        "report",
+        "targeting_interests",
+        "targeting_communities",
+        "targeting_geolocations",
+        "targeting_carriers",
+        "targeting_devices",
+        "targeting_languages",
         "time_zones"
       ],
-      "description": "The Reddit Ads object this row extracts. Choose 'report' for performance metrics.",
+      "description": "The Reddit Ads object this row extracts. Choose 'report' for performance metrics. Business/account must be set at config level for scoped objects.",
       "propertyOrder": 1,
       "options": {
         "enum_titles": [
-          "Ad Accounts",
           "Businesses",
-          "Members",
-          "Ad Account History",
+          "Ad Accounts",
+          "Product Catalogs",
           "Campaigns",
           "Ad Groups",
           "Ads",
-          "Posts",
-          "Report (performance metrics)",
           "Custom Audiences",
           "Saved Audiences",
-          "Targeting",
+          "Funding Instruments",
           "Pixels",
           "Lead Generation Forms",
-          "Product Catalogs",
-          "Funding Instruments",
-          "Apps",
-          "SKAdNetwork",
           "Profiles",
+          "Apps",
+          "Report (performance metrics)",
+          "Targeting — Interests",
+          "Targeting — Communities",
+          "Targeting — Geolocations",
+          "Targeting — Carriers",
+          "Targeting — Devices",
+          "Targeting — Languages",
           "Time Zones"
         ]
       }
@@ -62,7 +64,7 @@
       "description": "How data is written to the destination table.",
       "propertyOrder": 2,
       "options": {
-        "tooltip": "**Full load** overwrites the destination table on every run.\n\n**Incremental load** upserts rows on the primary key, keeping previously loaded data. Reference objects (accounts, businesses, targeting, time zones, …) are always full-loaded.",
+        "tooltip": "**Full load** overwrites the destination table on every run.\n\n**Incremental load** upserts rows on the primary key. Reference objects (targeting, time zones, funding instruments, pixels, profiles, apps) have no cursor and are always full-loaded.",
         "enum_titles": ["Full Load", "Incremental Load"]
       }
     },
@@ -76,26 +78,15 @@
         }
       },
       "properties": {
-        "level": {
-          "type": "string",
-          "title": "Report level",
-          "enum": ["ACCOUNT", "CAMPAIGN", "AD_GROUP", "AD"],
-          "default": "CAMPAIGN",
-          "description": "The entity level the metrics are aggregated at.",
-          "propertyOrder": 1,
-          "options": {
-            "enum_titles": ["Account", "Campaign", "Ad Group", "Ad"]
-          }
-        },
         "metrics": {
           "type": "array",
-          "title": "Metrics",
+          "title": "Metrics (fields)",
           "items": { "type": "string" },
           "format": "select",
           "uniqueItems": true,
           "default": ["impressions", "clicks", "spend"],
-          "description": "Metrics to include in the report (e.g. impressions, clicks, spend, conversions, ctr, cpc, ecpm).",
-          "propertyOrder": 2,
+          "description": "Metric fields to include (e.g. impressions, clicks, spend, conversions, ctr, ecpm).",
+          "propertyOrder": 1,
           "options": { "tags": true }
         },
         "breakdowns": {
@@ -104,43 +95,17 @@
           "items": { "type": "string" },
           "format": "select",
           "uniqueItems": true,
-          "default": [],
-          "description": "Up to 3 dimensions to break the report down by (e.g. date, placement, country, device).",
-          "propertyOrder": 3,
+          "default": ["DATE"],
+          "description": "Up to 3 grouping dimensions (e.g. DATE, CAMPAIGN_ID, AD_GROUP_ID, AD_ID, COUNTRY). These become the report table's primary key.",
+          "propertyOrder": 2,
           "options": { "tags": true }
-        },
-        "time_zone": {
-          "type": "string",
-          "title": "Time zone",
-          "enum": [],
-          "default": "UTC",
-          "format": "select",
-          "description": "Time zone used to bucket report dates.",
-          "propertyOrder": 4,
-          "options": {
-            "async": {
-              "label": "Load Time Zones",
-              "action": "listTimeZones"
-            }
-          }
-        },
-        "granularity": {
-          "type": "string",
-          "title": "Time granularity",
-          "enum": ["DAY", "HOUR", "TOTAL"],
-          "default": "DAY",
-          "description": "Time bucketing for the metrics.",
-          "propertyOrder": 5,
-          "options": {
-            "enum_titles": ["Day", "Hour", "Total"]
-          }
         },
         "date_range_mode": {
           "type": "string",
           "title": "Date range mode",
           "enum": ["last_n_days", "custom"],
           "default": "last_n_days",
-          "propertyOrder": 6,
+          "propertyOrder": 3,
           "options": {
             "enum_titles": ["Last N Days", "Custom Date Range"]
           }
@@ -152,7 +117,7 @@
           "minimum": 1,
           "maximum": 365,
           "description": "Number of trailing days (including today) to fetch.",
-          "propertyOrder": 7,
+          "propertyOrder": 4,
           "options": {
             "dependencies": { "date_range_mode": "last_n_days" }
           }
@@ -164,7 +129,7 @@
           "minimum": 0,
           "maximum": 90,
           "description": "Extra trailing days re-pulled each incremental run so late conversion attribution is upserted.",
-          "propertyOrder": 8,
+          "propertyOrder": 5,
           "options": {
             "dependencies": { "date_range_mode": "last_n_days" }
           }
@@ -173,7 +138,7 @@
           "type": "string",
           "title": "Start date",
           "description": "Window start. Absolute (YYYY-MM-DD) or relative ('30 days ago').",
-          "propertyOrder": 9,
+          "propertyOrder": 6,
           "options": {
             "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. 30 days ago" },
             "dependencies": { "date_range_mode": "custom" }
@@ -183,7 +148,7 @@
           "type": "string",
           "title": "End date",
           "description": "Window end. Absolute (YYYY-MM-DD) or relative ('today').",
-          "propertyOrder": 10,
+          "propertyOrder": 7,
           "options": {
             "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. today" },
             "dependencies": { "date_range_mode": "custom" }

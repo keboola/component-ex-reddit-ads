@@ -37,18 +37,33 @@
         }
       }
     },
+    "business_id": {
+      "type": "string",
+      "title": "Business",
+      "enum": [],
+      "format": "select",
+      "description": "The Reddit Ads business. Required for business-scoped objects (ad accounts, product catalogs) and to load ad accounts.",
+      "propertyOrder": 5,
+      "options": {
+        "async": {
+          "label": "Load Businesses",
+          "action": "listBusinesses",
+          "autoload": ["#client_id", "#client_secret", "#refresh_token"]
+        }
+      }
+    },
     "ad_account_id": {
       "type": "string",
       "title": "Ad Account",
       "enum": [],
       "format": "select",
-      "description": "Select the Reddit Ads account to extract data from.",
-      "propertyOrder": 5,
+      "description": "The Reddit Ads account. Required for account-scoped objects and reports. Select a business first.",
+      "propertyOrder": 6,
       "options": {
         "async": {
           "label": "Load Ad Accounts",
           "action": "listAdAccounts",
-          "autoload": ["#client_id", "#client_secret", "#refresh_token"]
+          "autoload": ["#client_id", "#client_secret", "#refresh_token", "business_id"]
         }
       }
     }
