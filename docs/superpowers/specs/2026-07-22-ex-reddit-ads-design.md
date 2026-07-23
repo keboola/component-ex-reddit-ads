@@ -89,26 +89,43 @@ Full read surface (user chose **Full read surface**, 2026-07-22). Every capabili
 research inventory appears below with a verdict. The four Excluded rows are write/interactive
 endpoints that produce no dataset — the user signed off on excluding them (2026-07-22).
 
+> **Verified-contract update (2026-07-23):** with live credentials, the real API v3 was probed and
+> the contract corrected (see §3/§6). Key changes to this table's original plan:
+> - **Hierarchy:** user → business → ad account. Objects are scope-aware (user / business / account /
+>   top-level). "Ad Accounts" and "Product Catalogs" are **business-scoped**; "Businesses" is
+>   `me/businesses`.
+> - **Targeting** is not one endpoint but a **family of 6** (interests, communities, geolocations,
+>   carriers, devices, languages) — each shipped as its own object/table.
+> - **Reports** have no "level" param; grouping is via `breakdowns`; metrics are `fields`; request is
+>   wrapped in `data`; rows return under `data.metrics`.
+> - **4 objects deferred (paths unresolvable without Reddit doc access):** Posts, SKAdNetwork, Ad
+>   Account History, Members (Members is scope-gated, 401). These return 404/401 on every probed path;
+>   shipping broken selectors is worse than deferring, so they are **removed from the object list** and
+>   flagged for the user. To be added once exact paths are obtained (Reddit partner support / Postman).
+>
+> Net shipped surface: **16 verified capabilities** (with Targeting expanded to 6 concrete tables =
+> 21 selectable objects). Verdicts below are updated accordingly.
+
 | # | Capability (data family / endpoint) | Verdict | Rationale |
 |---|---|---|---|
 | 1 | Ad Accounts | In scope | account structure (full load) |
 | 2 | Businesses | In scope | org owning accounts (full load) |
-| 3 | Members | In scope | team/permissions (full load) |
-| 4 | Ad Account History | In scope | change-log; incremental by event timestamp |
+| 3 | Members | **Deferred (2026-07-23)** | path scope-gated (401) — needs a members scope; add later |
+| 4 | Ad Account History | **Deferred (2026-07-23)** | endpoint path unresolvable without Reddit doc access (404) |
 | 5 | Campaigns | In scope | incremental by `modified_at`, PK `id` |
 | 6 | Ad Groups | In scope | incremental by `modified_at`, PK `id` |
 | 7 | Ads | In scope | incremental by `modified_at`, PK `id` |
-| 8 | Posts (creatives) | In scope | creative content behind ads |
-| 9 | Reports | In scope | **core**; levels account/campaign/ad-group/ad, metrics, ≤3 breakdowns |
+| 8 | Posts (creatives) | **Deferred (2026-07-23)** | endpoint path unresolvable without Reddit doc access (404) |
+| 9 | Reports | In scope | **core**; `fields` (metrics) + ≤3 `breakdowns`; verified live |
 | 10 | Custom Audiences | In scope | audience lists |
 | 11 | Saved Audiences | In scope | reusable segments |
-| 12 | Targeting | In scope | reference lookups (geo/interests/communities/devices/languages) |
+| 12 | Targeting | In scope (×6) | family: interests, communities, geolocations, carriers, devices, languages — one table each; verified live |
 | 13 | Pixels | In scope | Reddit Pixel definitions |
 | 14 | Lead Generation Forms | In scope | forms (+ submitted leads if the endpoint exposes them) |
 | 15 | Product Catalogs | In scope | product feeds for dynamic ads |
 | 16 | Funding Instruments | In scope | billing/payment methods (full load) |
 | 17 | App | In scope | registered mobile apps |
-| 18 | SKAdNetwork | In scope | iOS attribution config |
+| 18 | SKAdNetwork | **Deferred (2026-07-23)** | endpoint path unresolvable without Reddit doc access (404) |
 | 19 | Profiles | In scope | user/community lookups (where retrievable for the account) |
 | 20 | Time Zones | In scope | reference lookup; also backs the report-timezone dropdown |
 | 21 | Bid Suggestions | Excluded | interactive lookup requiring inputs — not a dataset (user signed off 2026-07-22) |
