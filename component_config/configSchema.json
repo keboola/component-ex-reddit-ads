@@ -1,19 +1,56 @@
 {
   "type": "object",
-  "title": "extractor configuration",
-  "required": [
-    "print_hello"
-  ],
+  "title": "Reddit Ads Extractor configuration",
   "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
+    "#client_id": {
+      "type": "string",
+      "title": "Client ID",
+      "format": "password",
+      "required": true,
+      "description": "The App ID of your Reddit Developer Application (Business → Developer Portal).",
       "propertyOrder": 1
     },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
+    "#client_secret": {
+      "type": "string",
+      "title": "Client Secret",
+      "format": "password",
+      "required": true,
+      "description": "The secret of your Reddit Developer Application.",
       "propertyOrder": 2
+    },
+    "#refresh_token": {
+      "type": "string",
+      "title": "Refresh Token",
+      "format": "password",
+      "required": true,
+      "description": "OAuth refresh token minted once via the one-time browser authorization (see the component documentation).",
+      "propertyOrder": 3
+    },
+    "test_connection": {
+      "type": "button",
+      "format": "test-connection",
+      "propertyOrder": 4,
+      "options": {
+        "async": {
+          "label": "Test Connection",
+          "action": "testConnection"
+        }
+      }
+    },
+    "ad_account_id": {
+      "type": "string",
+      "title": "Ad Account",
+      "enum": [],
+      "format": "select",
+      "description": "Select the Reddit Ads account to extract data from.",
+      "propertyOrder": 5,
+      "options": {
+        "async": {
+          "label": "Load Ad Accounts",
+          "action": "listAdAccounts",
+          "autoload": ["#client_id", "#client_secret", "#refresh_token"]
+        }
+      }
     }
   }
 }

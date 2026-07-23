@@ -1,1 +1,1 @@
-Enter short description of the component here.
+Extracts advertising structure and performance data from the Reddit Ads API into Keboola Storage.

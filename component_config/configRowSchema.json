@@ -1,1 +1,195 @@
-{}
+{
+  "type": "object",
+  "title": "Reddit Ads Extractor row configuration",
+  "properties": {
+    "object": {
+      "type": "string",
+      "title": "Object to extract",
+      "enum": [
+        "ad_accounts",
+        "businesses",
+        "members",
+        "ad_account_history",
+        "campaigns",
+        "ad_groups",
+        "ads",
+        "posts",
+        "report",
+        "custom_audiences",
+        "saved_audiences",
+        "targeting",
+        "pixels",
+        "lead_gen_forms",
+        "product_catalogs",
+        "funding_instruments",
+        "app",
+        "skadnetwork",
+        "profiles",
+        "time_zones"
+      ],
+      "description": "The Reddit Ads object this row extracts. Choose 'report' for performance metrics.",
+      "propertyOrder": 1,
+      "options": {
+        "enum_titles": [
+          "Ad Accounts",
+          "Businesses",
+          "Members",
+          "Ad Account History",
+          "Campaigns",
+          "Ad Groups",
+          "Ads",
+          "Posts",
+          "Report (performance metrics)",
+          "Custom Audiences",
+          "Saved Audiences",
+          "Targeting",
+          "Pixels",
+          "Lead Generation Forms",
+          "Product Catalogs",
+          "Funding Instruments",
+          "Apps",
+          "SKAdNetwork",
+          "Profiles",
+          "Time Zones"
+        ]
+      }
+    },
+    "load_type": {
+      "type": "string",
+      "title": "Load type",
+      "enum": ["full_load", "incremental_load"],
+      "default": "incremental_load",
+      "description": "How data is written to the destination table.",
+      "propertyOrder": 2,
+      "options": {
+        "tooltip": "**Full load** overwrites the destination table on every run.\n\n**Incremental load** upserts rows on the primary key, keeping previously loaded data. Reference objects (accounts, businesses, targeting, time zones, …) are always full-loaded.",
+        "enum_titles": ["Full Load", "Incremental Load"]
+      }
+    },
+    "report": {
+      "type": "object",
+      "title": "Report settings",
+      "propertyOrder": 3,
+      "options": {
+        "dependencies": {
+          "object": "report"
+        }
+      },
+      "properties": {
+        "level": {
+          "type": "string",
+          "title": "Report level",
+          "enum": ["ACCOUNT", "CAMPAIGN", "AD_GROUP", "AD"],
+          "default": "CAMPAIGN",
+          "description": "The entity level the metrics are aggregated at.",
+          "propertyOrder": 1,
+          "options": {
+            "enum_titles": ["Account", "Campaign", "Ad Group", "Ad"]
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "title": "Metrics",
+          "items": { "type": "string" },
+          "format": "select",
+          "uniqueItems": true,
+          "default": ["impressions", "clicks", "spend"],
+          "description": "Metrics to include in the report (e.g. impressions, clicks, spend, conversions, ctr, cpc, ecpm).",
+          "propertyOrder": 2,
+          "options": { "tags": true }
+        },
+        "breakdowns": {
+          "type": "array",
+          "title": "Breakdowns",
+          "items": { "type": "string" },
+          "format": "select",
+          "uniqueItems": true,
+          "default": [],
+          "description": "Up to 3 dimensions to break the report down by (e.g. date, placement, country, device).",
+          "propertyOrder": 3,
+          "options": { "tags": true }
+        },
+        "time_zone": {
+          "type": "string",
+          "title": "Time zone",
+          "enum": [],
+          "default": "UTC",
+          "format": "select",
+          "description": "Time zone used to bucket report dates.",
+          "propertyOrder": 4,
+          "options": {
+            "async": {
+              "label": "Load Time Zones",
+              "action": "listTimeZones"
+            }
+          }
+        },
+        "granularity": {
+          "type": "string",
+          "title": "Time granularity",
+          "enum": ["DAY", "HOUR", "TOTAL"],
+          "default": "DAY",
+          "description": "Time bucketing for the metrics.",
+          "propertyOrder": 5,
+          "options": {
+            "enum_titles": ["Day", "Hour", "Total"]
+          }
+        },
+        "date_range_mode": {
+          "type": "string",
+          "title": "Date range mode",
+          "enum": ["last_n_days", "custom"],
+          "default": "last_n_days",
+          "propertyOrder": 6,
+          "options": {
+            "enum_titles": ["Last N Days", "Custom Date Range"]
+          }
+        },
+        "n_days": {
+          "type": "integer",
+          "title": "Number of days",
+          "default": 7,
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Number of trailing days (including today) to fetch.",
+          "propertyOrder": 7,
+          "options": {
+            "dependencies": { "date_range_mode": "last_n_days" }
+          }
+        },
+        "lookback_window": {
+          "type": "integer",
+          "title": "Lookback window (days)",
+          "default": 7,
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Extra trailing days re-pulled each incremental run so late conversion attribution is upserted.",
+          "propertyOrder": 8,
+          "options": {
+            "dependencies": { "date_range_mode": "last_n_days" }
+          }
+        },
+        "start_date": {
+          "type": "string",
+          "title": "Start date",
+          "description": "Window start. Absolute (YYYY-MM-DD) or relative ('30 days ago').",
+          "propertyOrder": 9,
+          "options": {
+            "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. 30 days ago" },
+            "dependencies": { "date_range_mode": "custom" }
+          }
+        },
+        "end_date": {
+          "type": "string",
+          "title": "End date",
+          "description": "Window end. Absolute (YYYY-MM-DD) or relative ('today').",
+          "propertyOrder": 10,
+          "options": {
+            "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. today" },
+            "dependencies": { "date_range_mode": "custom" }
+          }
+        }
+      }
+    }
+  }
+}
