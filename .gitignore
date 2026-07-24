@@ -19,3 +19,6 @@ tests/functional/*/source/data/out/
 tests/functional/*/source/data/in/
 # build-lifecycle tracker (local, never committed)
 docs/superpowers/*-lifecycle.md
+
+# VCR: never commit merged real secrets
+tests/functional/*/source/data/config.secrets.json

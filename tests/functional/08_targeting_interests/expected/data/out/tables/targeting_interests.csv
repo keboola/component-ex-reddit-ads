@@ -1,0 +1,153 @@
+pets_v3,Animals & Pets,Pets
+animals_v3,Animals & Pets,Animals
+home_decor_v3,Art & Design,Home
+home_repair_v3,Art & Design,Renovating
+art_v3,Art & Design,Art
+digital_art_v3,Art & Design,Digital Art
+diy_crafts_v3,Art & Design,DIY & Crafts
+design_v3,Art & Design,Design
+architecture_v3,Art & Design,Architecture
+photography_v3,Art & Design,Photography
+filmmaking_v3,Art & Design,Filmmaking
+performing_arts_v3,Art & Design,Performing Arts
+cars_v3,Automotive,Cars & Vehicles
+motorbikes_v3,Automotive,Motorcycles
+trains_v3,Automotive,Trains & Public Transport
+auto_type_v3,Automotive,Auto Brands
+auto_repair_v3,Automotive,Auto Repair
+career_planning_v3,Industries,Career Planning & Recruitment
+garden_farming_v3,Industries,Gardening & Agriculture
+law_v3,Industries,Law
+engineering_v3,Industries,Engineering
+marketing_v3,Industries,Marketing & Social Media
+real_estate_v3,Industries,Real Estate
+entrepreneurship_v3,Industries,Startups & Small Business
+cryptocurrency_v3,Business & Finance,Cryptocurrency
+business_v3,Business & Finance,Business
+marketplace_v3,Business & Finance,Deals & Marketplace
+personal_finance_v3,Business & Finance,Personal Finance
+investing_v3,Business & Finance,Stocks & Investing
+humor_v3,Entertainment,Humor
+memes_v3,Entertainment,Memes & Pop Culture
+music_v3,Music & Audio,Music
+musicians_v3,Music & Audio,Instruments & Production
+rock_v3,Music & Audio,Rock Music
+hiphop_v3,Music & Audio,Rap & Hip-hop Music
+country_v3,Music & Audio,Country Music
+metal_v3,Music & Audio,Metal Music
+jazz_v3,Music & Audio,Jazz Music
+classical_v3,Music & Audio,Classical Music
+electronic_v3,Music & Audio,Electronic Music
+r&b_v3,Music & Audio,R&B Music
+pop_v3,Music & Audio,Pop Music
+indie_alt_v3,Music & Audio,Indie Music
+kpop_v3,Music & Audio,K-pop Music
+entertainment_v3,Entertainment,General Entertainment
+amazed_v3,Moods,Amazing
+intrigued_v3,Moods,Intriguing
+wholesome_v3,Moods,Wholesome
+satisfied_v3,Moods,Satisfying
+spooked_v3,Moods,Spooky & Unusual
+toys_v3,Toys & Collectibles,Toys & Collectibles
+comics_v3,Reading,Comics & Graphic Novels
+anime_v3,Reading,Anime & Animation
+literature_v3,Reading,Stories & Literature
+reddit_meta_v3,Entertainment,Reddit Meta
+tv_movies_v3,Television & Film,Industry News & Discussion
+action_v3,Television & Film,Genre: Action
+crime_v3,Television & Film,Genre: Crime & Mystery
+fantasy_v3,Television & Film,Genre: Fantasy
+superhero_v3,Television & Film,Genre: Superhero
+documentaries_v3,Television & Film,Genre: Documentaries
+podcasts_v3,Music & Audio,Podcasts
+horror_v3,Television & Film,Genre: Horror
+life_advice_v3,Family & Relationships,Life Advice
+dating_v3,Family & Relationships,Dating
+family_v3,Family & Relationships,Family
+parenthood_v3,Family & Relationships,Parenting
+marriage_v3,Family & Relationships,Marriage & Civil Unions
+fashion_trends_v3,Style & Fashion,Fashion Brands
+accessories_v3,Style & Fashion,Accessories & Jewelry
+watches_v3,Style & Fashion,Watches
+streetwear_v3,Style & Fashion,Streetwear & Sneakers
+tattoos_piercings_v3,Style & Fashion,Tattoos & Piercings
+beauty_v3,Style & Fashion,Beauty
+makeup_v3,Style & Fashion,Makeup
+hair_v3,Style & Fashion,Hair
+nails_v3,Style & Fashion,Nails
+skincare_v3,Style & Fashion,Skincare
+womens_fashion_v3,Style & Fashion,Women's Fashion
+weddings_v3,Style & Fashion,Weddings
+mens_fashion_v3,Style & Fashion,Men's Fashion
+cooking_v3,Food & Drink,Cooking & Kitchen
+bbq_grilling_v3,Food & Drink,Barbecues & Grilling
+baking_v3,Food & Drink,Baking & Desserts
+vegetarian_vegan_v3,Food & Drink,Vegetarian & Vegan Food
+beverages_v3,Food & Drink,Non-Alcoholic Beverages
+fast_food_v3,Food & Drink,Fast Food & Restaurants
+alcohol_v3,Food & Drink,Alcoholic Beverages
+video_gaming_v3,Gaming,General Gaming
+pc_games_v3,Gaming,PC Games
+action_fps_games_v3,Gaming,Action & FPS Games
+rpg_games_v3,Gaming,RPG Games
+strategy_games_v3,Gaming,Strategy Games
+simulation_games_v3,Gaming,Simulation Games
+sports_games_v3,Gaming,Sport & Racing Games
+adventure_games_v3,Gaming,Adventure Games
+mobile_gaming_v3,Gaming,Mobile Gaming
+consoles_gear_v3,Gaming,"Gaming Consoles, Gear, & Setup"
+streamers_v3,Gaming,Streamers
+gaming_news_v3,Gaming,Gaming News & Discussion
+tabletop_games_v3,Gaming,Board & Card Games
+esports_v3,Gaming,eSports
+outdoors_v3,Healthy Living,Outdoor Activities
+nature_v3,Healthy Living,Nature
+boating_v3,Healthy Living,Boating & Sailing
+fitness_v3,Healthy Living,Exercise & Fitness
+nutrition_v3,Healthy Living,Diet & Nutrition
+wellness_v3,Healthy Living,Wellness
+us_news_v3,News & Education,US News & Politics
+world_news_v3,News & Education,World News & Politics
+college_education_v3,News & Education,Studying & Education
+languages_v3,News & Education,Languages
+science_v3,News & Education,Science
+soccer_v3,Sports,Soccer
+college_sports_v3,Sports,College Sports
+football_v3,Sports,American Football
+basketball_v3,Sports,Basketball
+baseball_v3,Sports,Baseball
+hockey_v3,Sports,Ice Hockey
+cycling_v3,Sports,Cycling
+wrestling_v3,Sports,Wrestling & Combat Sports
+track_and_field_v3,Sports,Track & Field
+golf_v3,Sports,Golf
+tennis_v3,Sports,Tennis & Racket Sports
+swimming_v3,Sports,Swimming & Water Sports
+rugby_v3,Sports,Rugby
+extreme_sports_v3,Sports,Extreme Sports
+motor_sports_v3,Sports,Racing
+fishing_v3,Sports,Fishing
+hunting_v3,Sports,Hunting
+wintersports_v3,Sports,Winter Sports
+other_sports_v3,Sports,Other Sports & Activities
+hardware_v3,Technology & Computing,Computers & Hardware
+software_v3,Technology & Computing,Software & Apps
+programming_v3,Technology & Computing,Programming
+consumer_electronics_v3,Technology & Computing,Consumer Electronics
+mobile_gadgets_v3,Technology & Computing,"Phones, Tablets, & Wearables"
+virtual_reality_v3,Technology & Computing,Virtual & Augmented Reality
+drama_v3,Television & Film,Genre: Drama
+science_fiction_v3,Television & Film,Genre: Scifi
+comedy_v3,Television & Film,Genre: Comedy
+animation_v3,Television & Film,Genre: Animation
+reality_v3,Television & Film,Genre: Reality & Competition
+cordcutters_v3,Television & Film,Streaming Services
+travel_lifestyle_v3,Travel & Geography,Travel & Tourism
+flying_v3,Travel & Geography,Airlines
+africa_v3,Travel & Geography,Africa
+asia_v3,Travel & Geography,Asia
+europe_v3,Travel & Geography,Europe
+north_america_v3,Travel & Geography,North America
+south_america_v3,Travel & Geography,South America
+middle_east_v3,Travel & Geography,Middle East
+oceania_v3,Travel & Geography,"Australia, New Zealand, & Oceania"

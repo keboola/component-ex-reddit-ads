@@ -1,0 +1,23 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "targeting_interests.csv": {
+      "columns": [
+        "pets_v3",
+        "Animals & Pets",
+        "Pets"
+      ],
+      "hash": "sha256:29e80d1b12bf70253fad175d8948ccbba5f7cf2e7bbbeba830d6a7857fa9bcdf",
+      "row_count": 153,
+      "size_bytes": 6545
+    },
+    "targeting_interests.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:46e06f55fbbae071797f04f8300061153ea5d9de2d4d6bfdea37e8a33dbafccd",
+      "row_count": null,
+      "size_bytes": 618
+    }
+  },
+  "version": "1.0"
+}

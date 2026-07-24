@@ -1,0 +1,29 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "funding_instruments.csv": {
+      "columns": [
+        "1907669",
+        "0",
+        "0",
+        "EUR",
+        "",
+        "false",
+        "Self-Serve",
+        "[\"CREDIT_LINE_EXHAUSTED\", \"CREDIT_CARD_NOT_APPROVED\"]",
+        ""
+      ],
+      "hash": "sha256:3378b877a01f0f11061745c200b19312a61f3dce64c24abfec3142107d5ec698",
+      "row_count": 1,
+      "size_bytes": 96
+    },
+    "funding_instruments.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:5bcc317040da4f227745c5f186cc6a030519a8431e8969d0eb986b56bacdff57",
+      "row_count": null,
+      "size_bytes": 1534
+    }
+  },
+  "version": "1.0"
+}

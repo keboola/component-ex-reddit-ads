@@ -28,22 +28,35 @@ from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import BaseType, ColumnDefinition
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import MessageType, SelectElement, ValidationResult
-from keboola.vcr import BodyFieldSanitizer, DefaultSanitizer
+from keboola.vcr import DefaultSanitizer
 
 from client import RedditAdsClient
 from configuration import Configuration, Credentials, DateRangeMode, ObjectType, ReportConfig
 
 # VCR sanitizers, picked up by the datadirtest VCR scaffolder during recording.
-# 1) DefaultSanitizer strips the Authorization header + the OAuth token fields.
-# 2) BodyFieldSanitizer redacts account names/spend from recorded bodies.
-#    NEVER redact id fields (`id`, `business_id`, …) or `date`/`modified_at` —
-#    primary keys and the incremental window depend on them.
-_REDACTED_TEXT_FIELDS = ["name", "email", "phone", "website_url", "firstname", "lastname", "reddit_username"]
-_REDACTED_NUMERIC_FIELDS = ["spend", "spend_micros", "credit_limit", "billable_amount"]
+# DefaultSanitizer strips the Authorization header (the Basic client_id:client_secret
+# on the token exchange + the bearer on API calls) and redacts the OAuth token fields
+# in the token-exchange request/response body — the only true secrets.
+#
+# We deliberately do NOT redact response *content* fields (names, phone, spend, …):
+# the scaffolder builds each test's `expected/` output from the live recording run
+# while the cassette is sanitized, so redacting any field that is also an output column
+# makes replay output diverge from `expected/` (a guaranteed test failure). The recorded
+# data here is Keboola's own low-spend test account plus public reference data
+# (time zones, targeting), so no sensitive content is committed.
+# Keep every real-secret field DefaultSanitizer redacts, but DROP "code": the only
+# `code` in this component's traffic is the time-zone `code` (GMT/EET…), a plain output
+# column — the OAuth authorization code never appears at runtime (we use refresh tokens).
+# Redacting it would corrupt the time_zones output and break replay.
+_SENSITIVE_FIELDS = [
+    "access_token", "refresh_token", "id_token", "client_id", "client_secret",
+    "client_assertion", "password", "token",
+    # `email` appears only in the /me response (test-connection); it is never an output
+    # column, so redacting it scrubs the account email from committed cassettes safely.
+    "email",
+]
 VCR_SANITIZERS = [
-    DefaultSanitizer(additional_sensitive_fields=["access_token", "refresh_token", "client_id", "client_secret"]),
-    BodyFieldSanitizer(fields=_REDACTED_TEXT_FIELDS, replacement="REDACTED"),
-    BodyFieldSanitizer(fields=_REDACTED_NUMERIC_FIELDS, replacement="0"),
+    DefaultSanitizer(sensitive_fields=_SENSITIVE_FIELDS),
 ]
 
 _STATE_LAST_RUN = "last_run"
