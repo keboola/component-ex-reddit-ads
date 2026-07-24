@@ -9,6 +9,7 @@ All network access lives here; ``component.py`` stays a thin orchestrator.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Iterator
@@ -26,13 +27,32 @@ _MAX_RETRIES = 6
 _DEFAULT_RETRY_WAIT_S = 30
 _MAX_BACKOFF_S = 60
 
-# Statuses worth retrying vs. surfacing as a user-fixable error.
-_TRANSIENT_STATUS = {429, 500, 502, 503, 504}
-_USER_ERROR_STATUS = {400, 404, 422}
-
 # Fallback wait when the API doesn't tell us how long to hold off: exponential
 # back-off with jitter, capped.
 _FALLBACK_WAIT = tenacity.wait_exponential_jitter(initial=1, max=_MAX_BACKOFF_S)
+
+# Redact any error-body key that looks like a secret before it reaches DEBUG logs.
+_SENSITIVE_KEY_HINTS = ("token", "secret", "password", "authorization", "assertion", "client_id")
+
+
+def _is_transient_status(status: int) -> bool:
+    """Retryable HTTP statuses: rate-limit (429) and any server-side 5xx.
+
+    Kept deliberately broad (``>= 500`` rather than an allow-list) so a new 5xx
+    variant the vendor introduces is retried, not surfaced as an internal error.
+    """
+    return status == 429 or status >= 500
+
+
+def _redact(value: Any) -> Any:
+    """Recursively mask values under secret-looking keys, for safe DEBUG logging."""
+    if isinstance(value, dict):
+        return {
+            k: ("***" if any(h in k.lower() for h in _SENSITIVE_KEY_HINTS) else _redact(v)) for k, v in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact(v) for v in value]
+    return value
 
 
 class RedditAdsClientError(Exception):
@@ -80,11 +100,35 @@ class RedditAdsClient:
         """Obtain an access token once per run via the refresh-token grant.
 
         Reddit access tokens live at least an hour, so a single refresh at the
-        start of a run is sufficient. The token exchange uses HTTP Basic auth
-        (client_id:client_secret) as Reddit requires.
+        start of a run is sufficient. The exchange goes through the same tenacity
+        retry/back-off as every API call, so a transient 429/5xx (or a network
+        blip) on the token endpoint is retried rather than surfaced as an internal
+        error (exit 2).
         """
         if self._access_token is not None:
             return
+        retryer = tenacity.Retrying(
+            retry=tenacity.retry_if_exception_type(_TransientError),
+            stop=tenacity.stop_after_attempt(_MAX_RETRIES),
+            wait=self._retry_wait,
+            sleep=time.sleep,
+            before_sleep=self._log_retry,
+            reraise=False,
+        )
+        try:
+            token = retryer(self._attempt_token)
+        except tenacity.RetryError as err:
+            transient = err.last_attempt.exception()
+            raise self._exhausted_error(TOKEN_URL, transient) from transient
+        self._access_token = token
+        self._session.headers["Authorization"] = f"bearer {token}"
+
+    def _attempt_token(self) -> str:
+        """Perform a single token exchange (HTTP Basic auth, as Reddit requires).
+
+        Raises ``_TransientError`` on a retryable failure and ``UserException`` on
+        a credential problem; returns the access token on success.
+        """
         try:
             resp = self._session.post(
                 TOKEN_URL,
@@ -94,11 +138,10 @@ class RedditAdsClient:
                 timeout=self._timeout,
             )
         except requests.RequestException as exc:
-            raise UserException(
-                f"Could not reach Reddit's OAuth token endpoint ({type(exc).__name__}). "
-                f"This is usually a temporary network issue — please try again later."
-            ) from exc
+            raise _TransientError(cause=exc) from exc
 
+        if _is_transient_status(resp.status_code):
+            raise _TransientError(status=resp.status_code, wait=self._transient_wait(resp))
         if resp.status_code in (400, 401):
             raise UserException(
                 f"Reddit OAuth failed (HTTP {resp.status_code}). Check the Client ID, Client Secret and "
@@ -110,8 +153,7 @@ class RedditAdsClient:
         token = (resp.json() or {}).get("access_token")
         if not token:
             raise UserException("Reddit OAuth response did not contain an access token. Check your credentials.")
-        self._access_token = token
-        self._session.headers["Authorization"] = f"bearer {token}"
+        return token
 
     # -------------------------------------------------------------------- core
 
@@ -141,7 +183,7 @@ class RedditAdsClient:
         except requests.RequestException as exc:
             raise _TransientError(cause=exc) from exc
 
-        if resp.status_code in _TRANSIENT_STATUS:
+        if _is_transient_status(resp.status_code):
             raise _TransientError(status=resp.status_code, wait=self._transient_wait(resp))
         if resp.status_code == 401:
             raise UserException(
@@ -154,7 +196,10 @@ class RedditAdsClient:
                 f"Access forbidden (403) for '{url}'. The authorizing account may lack permission for "
                 f"this ad account or the required scope (adsread)."
             )
-        if resp.status_code in _USER_ERROR_STATUS:
+        # Any remaining 4xx is user-fixable (bad parameter, missing/unsupported resource, …).
+        # Treat the whole range so a status we didn't special-case never falls through to an
+        # opaque internal error (exit 2).
+        if 400 <= resp.status_code < 500:
             logging.debug("HTTP %s response body for %s: %s", resp.status_code, url, self._error_detail(resp))
             raise UserException(
                 f"Request to '{url}' was rejected (HTTP {resp.status_code}). This usually means a "
@@ -213,9 +258,7 @@ class RedditAdsClient:
             if isinstance(body, dict):
                 errors = body.get("errors") or body.get("error")
                 if errors:
-                    import json as _json
-
-                    return _json.dumps(errors)[:500]
+                    return json.dumps(_redact(errors))[:500]
         except ValueError:
             pass
         return resp.text[:500]

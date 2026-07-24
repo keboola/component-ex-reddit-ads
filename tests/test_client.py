@@ -74,6 +74,30 @@ def test_ensure_token_missing_token_raises_userexception():
             client._ensure_token()
 
 
+def test_ensure_token_retries_on_5xx_then_succeeds():
+    # The token exchange goes through the same retry pipeline as API calls, so a
+    # transient 5xx on the token endpoint is retried rather than surfaced as exit 2.
+    client = _client(with_token=False)
+    responses = [
+        FakeResponse(status_code=503, headers={"retry-after": "0"}),
+        FakeResponse(json_body={"access_token": "abc123"}),
+    ]
+    with mock.patch.object(client._session, "post", side_effect=responses):
+        with mock.patch("client.time.sleep") as sleep:
+            client._ensure_token()
+    assert client._access_token == "abc123"
+    assert sleep.call_count >= 1
+
+
+def test_ensure_token_unexpected_status_raises_client_error():
+    # A non-credential, non-transient failure on the token endpoint is genuinely
+    # unexpected → RedditAdsClientError (exit 2).
+    client = _client(with_token=False)
+    with mock.patch.object(client._session, "post", return_value=FakeResponse(status_code=404, text="nope")):
+        with pytest.raises(RedditAdsClientError):
+            client._ensure_token()
+
+
 # ------------------------------------------------------------ pagination
 
 
@@ -192,8 +216,10 @@ def test_request_network_error_retried_then_raises():
     assert sleep.call_count >= 1
 
 
-def test_request_unexpected_status_raises_client_error():
+def test_request_unexpected_4xx_raises_userexception():
+    # Any 4xx we don't special-case is treated as user-fixable (no silent gap that
+    # would otherwise fall through to an opaque internal error).
     client = _client()
     with mock.patch.object(client._session, "request", return_value=FakeResponse(status_code=418, text="teapot")):
-        with pytest.raises(RedditAdsClientError):
+        with pytest.raises(UserException):
             client._request("GET", f"{BASE_URL}/ad_accounts")

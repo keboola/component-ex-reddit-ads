@@ -31,7 +31,14 @@ from keboola.component.sync_actions import MessageType, SelectElement, Validatio
 from keboola.vcr import DefaultSanitizer
 
 from client import RedditAdsClient
-from configuration import Configuration, Credentials, DateRangeMode, ObjectType, ReportConfig
+from configuration import (
+    BusinessSelection,
+    Configuration,
+    Credentials,
+    DateRangeMode,
+    ObjectType,
+    ReportConfig,
+)
 
 # VCR sanitizers, picked up by the datadirtest VCR scaffolder during recording.
 # DefaultSanitizer strips the Authorization header (the Basic client_id:client_secret
@@ -49,8 +56,14 @@ from configuration import Configuration, Credentials, DateRangeMode, ObjectType,
 # column — the OAuth authorization code never appears at runtime (we use refresh tokens).
 # Redacting it would corrupt the time_zones output and break replay.
 _SENSITIVE_FIELDS = [
-    "access_token", "refresh_token", "id_token", "client_id", "client_secret",
-    "client_assertion", "password", "token",
+    "access_token",
+    "refresh_token",
+    "id_token",
+    "client_id",
+    "client_secret",
+    "client_assertion",
+    "password",
+    "token",
     # `email` appears only in the /me response (test-connection); it is never an output
     # column, so redacting it scrubs the account email from committed cassettes safely.
     "email",
@@ -398,7 +411,7 @@ class Component(ComponentBase):
     @sync_action("listBusinesses")
     def list_businesses_action(self) -> list[SelectElement]:
         try:
-            businesses = list(self._client.get_paginated("me/businesses"))
+            businesses = list(self._client.get_paginated(_REGISTRY[ObjectType.businesses].path))
         except UserException:
             raise
         except Exception as exc:
@@ -411,11 +424,12 @@ class Component(ComponentBase):
 
     @sync_action("listAdAccounts")
     def list_ad_accounts_action(self) -> list[SelectElement]:
-        business_id = self.configuration.parameters.get("business_id")
+        business_id = BusinessSelection(**self.configuration.parameters).business_id
         if not business_id:
             raise UserException("Select a business first, then load its ad accounts.")
         try:
-            accounts = list(self._client.get_paginated(f"businesses/{business_id}/ad_accounts"))
+            account_path = f"businesses/{business_id}/{_REGISTRY[ObjectType.ad_accounts].path}"
+            accounts = list(self._client.get_paginated(account_path))
         except UserException:
             raise
         except Exception as exc:

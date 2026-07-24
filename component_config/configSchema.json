@@ -1,20 +1,19 @@
 {
   "type": "object",
-  "title": "Reddit Ads Extractor configuration",
+  "title": "Reddit Ads Extractor Configuration",
+  "required": ["#client_id", "#client_secret", "#refresh_token"],
   "properties": {
     "#client_id": {
       "type": "string",
       "title": "Client ID",
       "format": "password",
-      "required": true,
-      "description": "The App ID of your Reddit Developer Application (Business → Developer Portal).",
+      "description": "The App ID of your Reddit Developer Application.",
       "propertyOrder": 1
     },
     "#client_secret": {
       "type": "string",
       "title": "Client Secret",
       "format": "password",
-      "required": true,
       "description": "The secret of your Reddit Developer Application.",
       "propertyOrder": 2
     },
@@ -22,9 +21,11 @@
       "type": "string",
       "title": "Refresh Token",
       "format": "password",
-      "required": true,
-      "description": "OAuth refresh token minted once via the one-time browser authorization (see the component documentation).",
-      "propertyOrder": 3
+      "description": "OAuth refresh token for your Reddit account.",
+      "propertyOrder": 3,
+      "options": {
+        "tooltip": "Minted once via the one-time browser authorization. See the component documentation for how to obtain it."
+      }
     },
     "test_connection": {
       "type": "button",
@@ -42,9 +43,10 @@
       "title": "Business",
       "enum": [],
       "format": "select",
-      "description": "The Reddit Ads business. Required for business-scoped objects (ad accounts, product catalogs) and to load ad accounts.",
+      "description": "The Reddit Ads business.",
       "propertyOrder": 5,
       "options": {
+        "tooltip": "Required for business-scoped objects (ad accounts, product catalogs) and to load ad accounts.",
         "async": {
           "label": "Load Businesses",
           "action": "listBusinesses",
@@ -57,9 +59,10 @@
       "title": "Ad Account",
       "enum": [],
       "format": "select",
-      "description": "The Reddit Ads account. Required for account-scoped objects and reports. Select a business first.",
+      "description": "The Reddit Ads account.",
       "propertyOrder": 6,
       "options": {
+        "tooltip": "Required for account-scoped objects and reports. Select a business first.",
         "async": {
           "label": "Load Ad Accounts",
           "action": "listAdAccounts",

@@ -87,7 +87,7 @@ class ReportConfig(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    metrics: list[str] = Field(default_factory=list)  # sent to the API as `fields`
+    metrics: list[str]  # required; sent to the API as `fields`
     breakdowns: list[str] = Field(default_factory=lambda: ["DATE"])
     date_range_mode: DateRangeMode = DateRangeMode.last_n_days
     # Used when date_range_mode == last_n_days
@@ -131,6 +131,15 @@ class Credentials(BaseModel):
         except ValidationError as e:
             error_messages = [f"{'.'.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()]
             raise UserException(f"Configuration validation error: {', '.join(error_messages)}") from e
+
+
+class BusinessSelection(BaseModel):
+    """Just the ``business_id`` — used by the Load Ad Accounts sync action so it
+    reads through a typed model rather than the raw parameters dict."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    business_id: str = ""
 
 
 class Configuration(Credentials):
