@@ -1,0 +1,22 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "targeting_devices.csv": {
+      "columns": [
+        "Samsung",
+        "Galaxy S9"
+      ],
+      "hash": "sha256:dc4eb86ab50950011419ea50bb2b3e650faf7413b11054c521c710a5805ef289",
+      "row_count": 1174,
+      "size_bytes": 24327
+    },
+    "targeting_devices.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:59c07712ec1f30ad76d5572704bd55d7e85b186941505e410d26ab36415b23b5",
+      "row_count": null,
+      "size_bytes": 501
+    }
+  },
+  "version": "1.0"
+}

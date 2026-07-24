@@ -1,0 +1,23 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "targeting_carriers.csv": {
+      "columns": [
+        "ATT_WIRELESS_US",
+        "US",
+        "AT&T Wireless"
+      ],
+      "hash": "sha256:8631daad5dd6615d63b493f929fd6099a59daabf7f4349f944b09c4be2a8baac",
+      "row_count": 72,
+      "size_bytes": 2042
+    },
+    "targeting_carriers.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:ee759c521891bbc3a42286c3c247d35c168ba8c28c3f9dd738cd3384b26ab48c",
+      "row_count": null,
+      "size_bytes": 622
+    }
+  },
+  "version": "1.0"
+}

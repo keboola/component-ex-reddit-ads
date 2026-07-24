@@ -1,19 +1,74 @@
 {
   "type": "object",
-  "title": "extractor configuration",
-  "required": [
-    "print_hello"
-  ],
+  "title": "Reddit Ads Extractor Configuration",
+  "required": ["#client_id", "#client_secret", "#refresh_token"],
   "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
+    "#client_id": {
+      "type": "string",
+      "title": "Client ID",
+      "format": "password",
+      "description": "The App ID of your Reddit Developer Application.",
       "propertyOrder": 1
     },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
+    "#client_secret": {
+      "type": "string",
+      "title": "Client Secret",
+      "format": "password",
+      "description": "The secret of your Reddit Developer Application.",
       "propertyOrder": 2
+    },
+    "#refresh_token": {
+      "type": "string",
+      "title": "Refresh Token",
+      "format": "password",
+      "description": "OAuth refresh token for your Reddit account.",
+      "propertyOrder": 3,
+      "options": {
+        "tooltip": "Minted once via the one-time browser authorization. See the component documentation for how to obtain it."
+      }
+    },
+    "test_connection": {
+      "type": "button",
+      "format": "test-connection",
+      "propertyOrder": 4,
+      "options": {
+        "async": {
+          "label": "Test Connection",
+          "action": "testConnection"
+        }
+      }
+    },
+    "business_id": {
+      "type": "string",
+      "title": "Business",
+      "enum": [],
+      "format": "select",
+      "description": "The Reddit Ads business.",
+      "propertyOrder": 5,
+      "options": {
+        "tooltip": "Required for business-scoped objects (ad accounts, product catalogs) and to load ad accounts.",
+        "async": {
+          "label": "Load Businesses",
+          "action": "listBusinesses",
+          "autoload": ["#client_id", "#client_secret", "#refresh_token"]
+        }
+      }
+    },
+    "ad_account_id": {
+      "type": "string",
+      "title": "Ad Account",
+      "enum": [],
+      "format": "select",
+      "description": "The Reddit Ads account.",
+      "propertyOrder": 6,
+      "options": {
+        "tooltip": "Required for account-scoped objects and reports. Select a business first.",
+        "async": {
+          "label": "Load Ad Accounts",
+          "action": "listAdAccounts",
+          "autoload": ["#client_id", "#client_secret", "#refresh_token", "business_id"]
+        }
+      }
     }
   }
 }

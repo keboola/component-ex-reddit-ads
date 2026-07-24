@@ -1,0 +1,8 @@
+{
+  "_metadata": {"freeze_time": "2026-07-24T00:00:00Z", "keboola_vcr_version": "0.6.0", "recorded_at": "2026-07-24T09:37:55.659944+00:00"},
+  "interactions": [
+    {"request": {"body": "grant_type=refresh_token&refresh_token=REDACTED", "headers": {"Accept": ["*/*"], "Content-Length": ["85"], "Content-Type": ["application/x-www-form-urlencoded"]}, "method": "POST", "uri": "https://www.reddit.com/api/v1/access_token"}, "response": {"body": {"string": "{\"access_token\": \"REDACTED\", \"token_type\": \"bearer\", \"expires_in\": 86400, \"refresh_token\": \"REDACTED\", \"scope\": \"adsread\"}"}, "headers": {"content-length": ["1017"], "content-type": ["application/json; charset=UTF-8"]}, "status": {"code": 200, "message": "OK"}}},
+    {"request": {"body": null, "headers": {"Accept": ["*/*"]}, "method": "GET", "uri": "https://ads-api.reddit.com/api/v3/ad_accounts/a2_jdqvp8s677tb/ads"}, "response": {"body": {"string": "{\"data\": [], \"pagination\": {\"previous_url\": null, \"next_url\": null}}"}, "headers": {"content-length": ["68"], "content-type": ["application/json"]}, "status": {"code": 200, "message": "OK"}}}
+  ],
+  "version": 1
+}

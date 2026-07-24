@@ -1,0 +1,40 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "ad_accounts.csv": {
+      "columns": [
+        "a2_jdqvp8s677tb",
+        "VALID",
+        "ALL_CONVERSION",
+        "WEEK",
+        "DAY",
+        "ALL_CONVERSION",
+        "87e83fb4-606d-43a1-9e2c-da205bf63d31",
+        "MONTH",
+        "2026-07-21T14:30:20.478000+00:00",
+        "EUR",
+        "[]",
+        "[]",
+        "2026-07-21T14:30:20.478000+00:00",
+        "Keboola Ad Account 07/21/2026",
+        "[]",
+        "t2_242rrx1gzu",
+        "",
+        "Europe/Amsterdam",
+        "SELF_SERVE",
+        "DAY"
+      ],
+      "hash": "sha256:0b3849aa041da1f1e677a4cd571099a2f016429a895f3e13558b736de22d182b",
+      "row_count": 1,
+      "size_bytes": 261
+    },
+    "ad_accounts.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:56d946d73ad791254d8a2639ea097610ebe1a3a8f0391f3773527e040d6ef673",
+      "row_count": null,
+      "size_bytes": 3291
+    }
+  },
+  "version": "1.0"
+}

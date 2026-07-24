@@ -1,0 +1,32 @@
+{
+  "files": {},
+  "hash_algorithm": "sha256",
+  "tables": {
+    "businesses.csv": {
+      "columns": [
+        "87e83fb4-606d-43a1-9e2c-da205bf63d31",
+        "false",
+        "CZ",
+        "2026-07-21T14:30:20Z",
+        "t2_242rrx1gzu",
+        "TECH_B2B",
+        "2026-07-21T14:30:35Z",
+        "Keboola",
+        "",
+        "t2_242rrx1gzu",
+        "DISABLED",
+        "https://keboola.com"
+      ],
+      "hash": "sha256:209a4f92708946f96132b3d63232e85c88e5d2155a5be6e153001f7d6ebb8a31",
+      "row_count": 1,
+      "size_bytes": 164
+    },
+    "businesses.csv.manifest": {
+      "columns": null,
+      "hash": "sha256:9d61d62bce903a08193fa10fce09b831c45e5693bae35f47860db8cb41702288",
+      "row_count": null,
+      "size_bytes": 1983
+    }
+  },
+  "version": "1.0"
+}

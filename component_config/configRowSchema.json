@@ -1,1 +1,168 @@
-{}
+{
+  "type": "object",
+  "title": "Reddit Ads Extractor Row Configuration",
+  "required": ["object"],
+  "properties": {
+    "object": {
+      "type": "string",
+      "title": "Object to Extract",
+      "enum": [
+        "businesses",
+        "ad_accounts",
+        "product_catalogs",
+        "campaigns",
+        "ad_groups",
+        "ads",
+        "custom_audiences",
+        "saved_audiences",
+        "funding_instruments",
+        "pixels",
+        "lead_gen_forms",
+        "profiles",
+        "apps",
+        "report",
+        "targeting_interests",
+        "targeting_communities",
+        "targeting_geolocations",
+        "targeting_carriers",
+        "targeting_devices",
+        "targeting_languages",
+        "time_zones"
+      ],
+      "description": "The Reddit Ads object this row extracts.",
+      "propertyOrder": 1,
+      "options": {
+        "tooltip": "Choose 'Report' for performance metrics. The business/account must be set at config level for scoped objects.",
+        "enum_titles": [
+          "Businesses",
+          "Ad Accounts",
+          "Product Catalogs",
+          "Campaigns",
+          "Ad Groups",
+          "Ads",
+          "Custom Audiences",
+          "Saved Audiences",
+          "Funding Instruments",
+          "Pixels",
+          "Lead Generation Forms",
+          "Profiles",
+          "Apps",
+          "Report (performance metrics)",
+          "Targeting — Interests",
+          "Targeting — Communities",
+          "Targeting — Geolocations",
+          "Targeting — Carriers",
+          "Targeting — Devices",
+          "Targeting — Languages",
+          "Time Zones"
+        ]
+      }
+    },
+    "load_type": {
+      "type": "string",
+      "title": "Load Type",
+      "enum": ["full_load", "incremental_load"],
+      "default": "incremental_load",
+      "description": "How data is written to the destination table.",
+      "propertyOrder": 2,
+      "options": {
+        "tooltip": "**Full load** overwrites the destination table on every run.\n\n**Incremental load** upserts rows on the primary key. Reference objects (targeting, time zones, funding instruments, pixels, profiles, apps) have no cursor and are always full-loaded.",
+        "enum_titles": ["Full Load", "Incremental Load"]
+      }
+    },
+    "report": {
+      "type": "object",
+      "title": "Report Settings",
+      "propertyOrder": 3,
+      "options": {
+        "dependencies": {
+          "object": "report"
+        }
+      },
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "title": "Metrics (Fields)",
+          "items": { "type": "string" },
+          "format": "select",
+          "uniqueItems": true,
+          "default": ["impressions", "clicks", "spend"],
+          "description": "Metric fields to include.",
+          "propertyOrder": 1,
+          "options": {
+            "tags": true,
+            "tooltip": "For example: impressions, clicks, spend, conversions, ctr, ecpm."
+          }
+        },
+        "breakdowns": {
+          "type": "array",
+          "title": "Breakdowns",
+          "items": { "type": "string" },
+          "format": "select",
+          "uniqueItems": true,
+          "default": ["DATE"],
+          "description": "Up to 3 grouping dimensions; these become the report table's primary key.",
+          "propertyOrder": 2,
+          "options": {
+            "tags": true,
+            "tooltip": "For example: DATE, CAMPAIGN_ID, AD_GROUP_ID, AD_ID, COUNTRY."
+          }
+        },
+        "date_range_mode": {
+          "type": "string",
+          "title": "Date Range Mode",
+          "enum": ["last_n_days", "custom"],
+          "default": "last_n_days",
+          "propertyOrder": 3,
+          "options": {
+            "enum_titles": ["Last N Days", "Custom Date Range"]
+          }
+        },
+        "n_days": {
+          "type": "integer",
+          "title": "Number of Days",
+          "default": 7,
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Number of trailing days (including today) to fetch.",
+          "propertyOrder": 4,
+          "options": {
+            "dependencies": { "date_range_mode": "last_n_days" }
+          }
+        },
+        "lookback_window": {
+          "type": "integer",
+          "title": "Lookback Window (Days)",
+          "default": 7,
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Extra trailing days re-pulled each incremental run so late conversion attribution is upserted.",
+          "propertyOrder": 5,
+          "options": {
+            "dependencies": { "date_range_mode": "last_n_days" }
+          }
+        },
+        "start_date": {
+          "type": "string",
+          "title": "Start Date",
+          "description": "Window start. Absolute (YYYY-MM-DD) or relative ('30 days ago').",
+          "propertyOrder": 6,
+          "options": {
+            "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. 30 days ago" },
+            "dependencies": { "date_range_mode": "custom" }
+          }
+        },
+        "end_date": {
+          "type": "string",
+          "title": "End Date",
+          "description": "Window end. Absolute (YYYY-MM-DD) or relative ('today').",
+          "propertyOrder": 7,
+          "options": {
+            "inputAttributes": { "placeholder": "YYYY-MM-DD or e.g. today" },
+            "dependencies": { "date_range_mode": "custom" }
+          }
+        }
+      }
+    }
+  }
+}

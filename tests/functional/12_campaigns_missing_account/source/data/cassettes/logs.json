@@ -1,0 +1,18 @@
+{
+  "exit_code": 1,
+  "stderr": "An ad account must be selected to extract 'campaigns'.\n",
+  "logs": [
+    {
+      "level": "INFO",
+      "logger": "root",
+      "message": "Loading state file..",
+      "timestamp": "2026-07-24T00:00:00.000Z"
+    },
+    {
+      "level": "ERROR",
+      "logger": "root",
+      "message": "An ad account must be selected to extract 'campaigns'.",
+      "timestamp": "2026-07-24T00:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "_metadata": {"freeze_time": "2026-07-24T00:00:00Z", "keboola_vcr_version": "0.6.0", "recorded_at": "2026-07-24T08:47:38.980596+00:00"},
+  "interactions": [
+    {"request": {"body": "grant_type=refresh_token&refresh_token=REDACTED", "headers": {"Accept": ["*/*"], "Content-Length": ["85"], "Content-Type": ["application/x-www-form-urlencoded"]}, "method": "POST", "uri": "https://www.reddit.com/api/v1/access_token"}, "response": {"body": {"string": "{\"access_token\": \"REDACTED\", \"token_type\": \"bearer\", \"expires_in\": 86400, \"refresh_token\": \"REDACTED\", \"scope\": \"adsread\"}"}, "headers": {"content-length": ["1017"], "content-type": ["application/json; charset=UTF-8"]}, "status": {"code": 200, "message": "OK"}}},
+    {"request": {"body": null, "headers": {"Accept": ["*/*"]}, "method": "GET", "uri": "https://ads-api.reddit.com/api/v3/me"}, "response": {"body": {"string": "{\"data\": {\"id\": \"t2_242rrx1gzu\", \"reddit_user_id\": \"t2_242rrx1gzu\", \"firstname\": \"Component\", \"lastname\": \"Factory\", \"email\": \"REDACTED\", \"phone\": null, \"reddit_username\": \"keboola-sro\", \"two_fa_setting\": \"ENABLED\", \"type\": \"MEMBER\"}}"}, "headers": {"content-length": ["255"], "content-type": ["application/json"]}, "status": {"code": 200, "message": "OK"}}}
+  ],
+  "version": 1
+}

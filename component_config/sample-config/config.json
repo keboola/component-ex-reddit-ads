@@ -2,12 +2,7 @@
   "storage": {
     "input": {
       "files": [],
-      "tables": [
-        {
-          "source": "in.c-example.example",
-          "destination": "example.csv"
-        }
-      ]
+      "tables": []
     },
     "output": {
       "files": [],
@@ -15,7 +10,12 @@
     }
   },
   "parameters": {
-    "#api_token": "your-secret-token",
-    "debug": false
+    "#client_id": "your-reddit-app-id",
+    "#client_secret": "your-reddit-app-secret",
+    "#refresh_token": "your-reddit-refresh-token",
+    "business_id": "your-business-id",
+    "ad_account_id": "your-ad-account-id",
+    "object": "campaigns",
+    "load_type": "incremental_load"
   }
 }

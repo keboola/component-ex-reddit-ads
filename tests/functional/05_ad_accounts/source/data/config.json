@@ -1,0 +1,11 @@
+{
+  "action": "run",
+  "parameters": {
+    "#client_id": "DUMMY_CLIENT_ID",
+    "#client_secret": "DUMMY_CLIENT_SECRET",
+    "#refresh_token": "DUMMY_REFRESH_TOKEN",
+    "business_id": "87e83fb4-606d-43a1-9e2c-da205bf63d31",
+    "object": "ad_accounts",
+    "load_type": "full_load"
+  }
+}

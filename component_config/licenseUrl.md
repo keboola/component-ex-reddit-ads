@@ -1,1 +1,1 @@
-/blob/master/LICENSE.md
+/blob/main/LICENSE.md
