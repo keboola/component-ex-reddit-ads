@@ -20,7 +20,7 @@
       "name": "agency_affiliated",
       "data_type": {
         "base": {
-          "type": "STRING"
+          "type": "BOOLEAN"
         }
       },
       "nullable": true

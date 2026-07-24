@@ -79,9 +79,18 @@ _STATE_LAST_RUN = "last_run"
 # blank PK value would fail the storage load.
 _EMPTY_PK_PLACEHOLDER = "__empty__"
 
-# Columns emitted with a known, stable native type. Everything else stays STRING
-# (the Reddit response is wide and heterogeneous; over-typing risks load failures).
+# Columns always emitted as a timestamp regardless of the sampled value kind.
 _TIMESTAMP_COLUMNS = frozenset({"created_at", "modified_at", "start_time", "end_time"})
+
+
+def _merge_kind(previous: str | None, current: str) -> str:
+    """Combine two observed value kinds for a column into the narrowest that fits both."""
+    if previous is None or previous == current:
+        return current
+    # int + float seen together → widen to numeric; any other mix → string.
+    if {previous, current} == {"integer", "numeric"}:
+        return "numeric"
+    return "string"
 
 
 class Scope(Enum):
@@ -141,6 +150,7 @@ class _TableWriter:
     def __init__(self, name: str) -> None:
         self.name = name
         self.columns: dict[str, None] = {}  # insertion-ordered set of every key seen
+        self._kinds: dict[str, str] = {}  # col -> inferred native kind (integer/numeric/boolean/string)
         self.count = 0
         self._fh = tempfile.NamedTemporaryFile(
             mode="w",
@@ -154,11 +164,33 @@ class _TableWriter:
         self.path = Path(self._fh.name)
 
     def write(self, row: dict[str, Any]) -> None:
-        for key in row:
+        for key, value in row.items():
             self.columns.setdefault(key, None)
+            self._observe_kind(key, value)
         self._fh.write(json.dumps(row))
         self._fh.write("\n")
         self.count += 1
+
+    def _observe_kind(self, key: str, value: Any) -> None:
+        """Track the narrowest native kind that fits every non-empty value in a column.
+
+        Values arrive post-flatten, so lists/dicts are already JSON strings; only
+        real scalar numbers/booleans widen a column away from STRING.
+        """
+        if value is None or value == "":
+            return  # empty cells carry no type information
+        if isinstance(value, bool):
+            kind = "boolean"
+        elif isinstance(value, int):
+            kind = "integer"
+        elif isinstance(value, float):
+            kind = "numeric"
+        else:
+            kind = "string"
+        self._kinds[key] = _merge_kind(self._kinds.get(key), kind)
+
+    def kind(self, column: str) -> str:
+        return self._kinds.get(column, "string")
 
     def rows(self) -> Iterator[dict[str, Any]]:
         self._fh.flush()
@@ -280,7 +312,9 @@ class Component(ComponentBase):
                 writer.write(self._flatten_record(row))
             pk = self._report_primary_key(rc, writer.columns)
             # Without a resolvable PK we overwrite (full) rather than append unbounded.
-            self._finalize_table(writer, primary_key=pk, incremental=cfg.incremental and bool(pk), typed=False)
+            # Report metrics are typed by inference like any other table (numeric metric
+            # values become numeric columns; breakdown keys stay STRING).
+            self._finalize_table(writer, primary_key=pk, incremental=cfg.incremental and bool(pk))
         finally:
             writer.close()
 
@@ -337,15 +371,12 @@ class Component(ComponentBase):
 
     # -------------------------------------------------------------- output
 
-    def _finalize_table(
-        self, writer: _TableWriter, primary_key: list[str], incremental: bool, typed: bool = True
-    ) -> None:
+    def _finalize_table(self, writer: _TableWriter, primary_key: list[str], incremental: bool) -> None:
         if writer.count == 0:
             logging.info("No rows for %s; skipping table.", writer.name)
             return
         columns = self._order_columns(writer.columns, primary_key)
-        base_type = self._base_type_for if typed else (lambda _col: BaseType.string())
-        schema = {col: ColumnDefinition(data_types=base_type(col)) for col in columns}
+        schema = {col: ColumnDefinition(data_types=self._base_type_for(col, writer.kind(col))) for col in columns}
         table = self.create_out_table_definition(
             f"{writer.name}.csv", primary_key=primary_key, incremental=incremental, schema=schema
         )
@@ -360,9 +391,15 @@ class Component(ComponentBase):
         logging.info("Wrote %d rows to %s.", writer.count, writer.name)
 
     @staticmethod
-    def _base_type_for(name: str) -> BaseType:
+    def _base_type_for(name: str, kind: str) -> BaseType:
         if name in _TIMESTAMP_COLUMNS:
             return BaseType.timestamp()
+        if kind == "integer":
+            return BaseType.integer()
+        if kind == "numeric":
+            return BaseType.numeric()
+        if kind == "boolean":
+            return BaseType.boolean()
         return BaseType.string()
 
     @staticmethod

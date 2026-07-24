@@ -159,5 +159,88 @@
         "object": "campaigns"
       }
     }
+  },
+  {
+    "name": "15_targeting_carriers",
+    "description": "Extract targeting carriers (top-level reference)",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN",
+        "object": "targeting_carriers"
+      }
+    }
+  },
+  {
+    "name": "16_targeting_devices",
+    "description": "Extract targeting devices (top-level reference; composite PK make+model)",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN",
+        "object": "targeting_devices"
+      }
+    }
+  },
+  {
+    "name": "18_product_catalogs",
+    "description": "Extract product catalogs (business-scoped)",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN",
+        "business_id": "87e83fb4-606d-43a1-9e2c-da205bf63d31",
+        "object": "product_catalogs",
+        "load_type": "full_load"
+      }
+    }
+  },
+  {
+    "name": "19_ad_groups",
+    "description": "Extract ad groups (account-scoped; empty-but-valid on the test account)",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN",
+        "ad_account_id": "a2_jdqvp8s677tb",
+        "object": "ad_groups",
+        "load_type": "full_load"
+      }
+    }
+  },
+  {
+    "name": "20_ads",
+    "description": "Extract ads (account-scoped; empty-but-valid on the test account)",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN",
+        "ad_account_id": "a2_jdqvp8s677tb",
+        "object": "ads",
+        "load_type": "full_load"
+      }
+    }
+  },
+  {
+    "name": "21_listAdAccounts_missing_business",
+    "description": "listAdAccounts without business_id → should fail with exit code 1",
+    "config": {
+      "action": "listAdAccounts",
+      "parameters": {
+        "#client_id": "DUMMY_CLIENT_ID",
+        "#client_secret": "DUMMY_CLIENT_SECRET",
+        "#refresh_token": "DUMMY_REFRESH_TOKEN"
+      }
+    }
   }
 ]

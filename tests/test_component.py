@@ -41,6 +41,35 @@ def test_is_modified_since():
     assert Component._is_modified_since({"modified_at": "2026-06-01T00:00:00Z"}, None, since) is True
 
 
+def test_since_returns_watermark_from_state():
+    since = Component._since(True, {"last_run": "2026-07-24T00:00:00+00:00"}, "modified_at")
+    assert since == datetime.fromisoformat("2026-07-24T00:00:00+00:00")
+
+
+def test_since_none_on_first_run_full_load_or_reference():
+    # first run, no prior watermark → full pull
+    assert Component._since(True, {}, "modified_at") is None
+    # full load → never filters
+    assert Component._since(False, {"last_run": "2026-07-24T00:00:00+00:00"}, "modified_at") is None
+    # reference object without a cursor → never filters
+    assert Component._since(True, {"last_run": "2026-07-24T00:00:00+00:00"}, None) is None
+
+
+def test_since_ignores_unreadable_state():
+    assert Component._since(True, {"last_run": "not-a-date"}, "modified_at") is None
+
+
+def test_incremental_filter_drops_stale_keeps_new():
+    # End-to-end filter decision: given a prior watermark, records modified at or
+    # before it are dropped and newer ones kept — the wiring _extract_object relies on.
+    since = Component._since(True, {"last_run": "2026-07-24T00:00:00+00:00"}, "modified_at")
+    assert since is not None
+    stale = {"id": "1", "modified_at": "2026-07-21T14:30:35Z"}
+    fresh = {"id": "2", "modified_at": "2026-07-25T00:00:00Z"}
+    kept = [r for r in (stale, fresh) if Component._is_modified_since(r, "modified_at", since)]
+    assert [r["id"] for r in kept] == ["2"]
+
+
 # --------------------------------------------------------------- scoping
 
 

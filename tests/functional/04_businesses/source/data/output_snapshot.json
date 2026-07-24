@@ -23,9 +23,9 @@
     },
     "businesses.csv.manifest": {
       "columns": null,
-      "hash": "sha256:fe212b5ac9570246ae50fccae7d6e29fef35d7f0fefbc33513cec7d6baa36a14",
+      "hash": "sha256:9d61d62bce903a08193fa10fce09b831c45e5693bae35f47860db8cb41702288",
       "row_count": null,
-      "size_bytes": 1982
+      "size_bytes": 1983
     }
   },
   "version": "1.0"
